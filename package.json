@@ -1,0 +1,108 @@
+{
+	"name": "n3-lang",
+	"description": "N3 Language and Execution Support",
+	"author": "N3-DEV",
+	"license": "MIT",
+	"version": "1.0.0",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Microsoft/vscode-extension-samples"
+	},
+	"publisher": "N3-DEV",
+	"categories": [],
+	"keywords": [
+		"multi-root ready"
+	],
+	"engines": {
+		"vscode": "^1.63.0"
+	},
+	"activationEvents": [
+		"onLanguage:n3",
+		"onCommand:n3.execute"
+	],
+	"main": "./client/out/extension",
+	"contributes": {
+		"languages": [
+			{
+				"id": "n3",
+				"aliases": [
+					"Notation3",
+					"n3",
+					"N3"
+				],
+				"extensions": [
+					".n3"
+				],
+				"configuration": "./language-configuration.json"
+			}
+		],
+		"grammars": [
+			{
+				"language": "n3",
+				"scopeName": "source.n3",
+				"path": "./syntaxes/n3.tmLanguage.json"
+			}
+		],
+		"themes": [
+			{
+				"label": "Notation3",
+				"uiTheme": "vs",
+				"path": "./themes/n3-color-theme.json"
+			}
+		],
+		"commands": [
+			{
+				"command": "n3.execute",
+				"title": "Execute N3 Code",
+				"category": "N3"
+			}
+		],
+		"configuration": {
+			"type": "object",
+			"title": "N3 configuration",
+			"properties": {
+				"n3LspServer.maxNumberOfProblems": {
+					"scope": "resource",
+					"type": "number",
+					"default": 100,
+					"description": "Controls the maximum number of problems produced by the server."
+				},
+				"n3LspServer.trace.server": {
+					"scope": "window",
+					"type": "string",
+					"enum": [
+						"off",
+						"messages",
+						"verbose"
+					],
+					"default": "verbose",
+					"description": "Traces the communication between VS Code and the language server."
+				}
+			}
+		}
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -b",
+		"watch": "tsc -b -w",
+		"lint": "eslint ./client/src ./server/src --ext .ts,.tsx",
+		"postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
+		"test": "sh ./scripts/e2e.sh"
+	},
+	"devDependencies": {
+		"@types/mocha": "^7.0.2",
+		"@types/node": "^16.11.7",
+		"@types/vscode": "^1.37.0",
+		"@typescript-eslint/eslint-plugin": "^5.42.0",
+		"@typescript-eslint/parser": "^5.42.0",
+		"eslint": "^8.26.0",
+		"mocha": "^9.2.1",
+		"typescript": "^4.9.4",
+		"vscode-test": "^1.3.0"
+	},
+	"dependencies": {
+		"python-shell": "^3.0.1",
+		"should": "^13.2.3",
+		"tsce": "^0.0.2-728e3d8f6f961ed1dd9b59ba3285788cb13ff913"
+	}
+}

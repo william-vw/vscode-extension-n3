@@ -1,0 +1,330 @@
+{
+  "name": "N3",
+  "scopeName": "source.n3",
+  "fileTypes": [
+    "turtle",
+    "ttl",
+    "n3"
+  ],
+  "patterns": [
+    { "include": "#prefix" },
+    { "include": "#comment" },
+    { "include": "#iriref" },
+    { "include": "#qname" },
+    { "include": "#quickVar" },
+    { "include": "#specialPredicates" },
+    { "include": "#specialPredicates2" },
+    { "include": "#separators" },
+    { "include": "#datatype" },
+    { "include": "#pathSymbols" },
+    { "include": "#literals" },
+    { "include": "#language-tag" },
+    { "include": "#formula" },
+    { "include": "#list" },
+    { "include": "#bnode" }
+  ],
+  "uuid": "230498230498sdfkj8909-34df-23dfs",
+  "repository": {
+    "prefix": {
+      "name": "keyword.operator.ns.n3",
+      "match": "(?i:@?base|@?prefix)\\s"
+    },
+    "iriref": {
+      "name": "entity.name.iriref.n3",
+      "match": "<[^\\x20-\\x20<>\"{}|^`\\\\]*>"
+    },
+    "qname": {
+      "name": "constant.other.qname.n3",
+      "match": "(\\w*:)(\\w*)",
+      "captures": {
+        "1": {
+          "name": "storage.type.PNAME_NS.n3"
+        },
+        "2": {
+          "name": "support.variable.PN_LOCAL.n3"
+        }
+      }
+    },
+    "quickVar": {
+      "name": "variable.parameter.quickVar.n3",
+      "match": "\\?(\\w*)",
+      "captures": {
+        "1": {
+          "name": "variable.parameter.PN_LOCAL.n3"
+        }
+      }
+    },
+    "comment": {
+      "name": "comment.line.number-sign.n3",
+      "match": "#.*$"
+    },
+    "specialPredicates": {
+      "name": "meta.specialPredicate.n3",
+      "match": "\\s(a)|(=)\\s",
+      "captures": {
+        "1":{
+          "name": "keyword.control.type.n3" 
+        },
+        "2":{
+          "name": "keyword.control.equiv.n3"
+        }
+      }
+    },
+    "specialPredicates2": {
+      "name": "keyword.control.arrow.n3",
+      "match": "(<=|=>)",
+      "captures": {
+        "1":{
+          "name": "keyword.control.arrow.n3" 
+        }
+      }
+    },
+    "separators": {
+      "name": "meta.separator.n3",
+      "match": "(\\.|;|,)"
+    },
+    "pathSymbols": {
+      "name": "meta.path.n3",
+      "match": "(\\!|\\^|<-)"
+    },
+    "literals": {
+      "patterns": [
+        { "include": "#string"},
+        { "include": "#numeric" },
+        { "include": "#boolean" }
+      ]
+    },
+    "string": {
+      "patterns": [
+        { "include": "#triple-squote-string-literal" },
+        { "include": "#triple-dquote-string-literal" },
+        { "include": "#triple-tick-string-literal" },
+        { "include": "#single-squote-string-literal" },
+        { "include": "#single-dquote-string-literal" }
+      ]
+    },
+		"single-squote-string-literal": {
+			"name": "string.quoted.single.n3",
+			"begin": "'",
+			"beginCaptures": {
+				"0": {
+					"name": "punctuation.definition.string.begin.n3"
+				}
+			},
+			"end": "'",
+			"endCaptures": {
+				"1": {
+					"name": "punctuation.definition.string.end.n3"
+				},
+				"2": {
+					"name": "invalid.illegal.newline.n3"
+				}
+			},
+			"patterns": [
+				{ "include": "#string-character-escape" }
+			]
+		},
+    "single-dquote-string-literal": {
+			"name": "string.quoted.double.n3",
+			"begin": "\"",
+			"beginCaptures": {
+				"0": {
+					"name": "punctuation.definition.string.begin.n3"
+				}
+			},
+			"end": "\"",
+			"endCaptures": {
+				"0": {
+					"name": "punctuation.definition.string.end.n3"
+				}
+			},
+			"patterns": [
+				{ "include": "#string-character-escape" }
+			]
+		},
+    "triple-squote-string-literal": {
+      "name": "string.quoted.triple.n3",
+      "begin": "'''",
+      "end":   "'''",
+      "beginCaptures": {
+				"0": {
+					"name": "punctuation.definition.string.begin.n3"
+				}
+			},
+      "endCaptures": {
+				"0": {
+					"name": "punctuation.definition.string.end.n3"
+				}
+			},
+      "patterns": [
+				{ "include": "#string-character-escape" }
+			]
+    },
+    "triple-dquote-string-literal": {
+      "name": "string.quoted.triple.n3",
+      "begin": "\"\"\"",
+      "end":   "\"\"\"",
+      "beginCaptures": {
+				"0": {
+					"name": "punctuation.definition.string.begin.n3"
+				}
+			},
+      "endCaptures": {
+				"0": {
+					"name": "punctuation.definition.string.end.n3"
+				}
+			},
+      "patterns": [
+				{ "include": "#string-character-escape" }
+			]
+    },
+    "triple-tick-string-literal": {
+      "name": "string.quoted.triple.n3",
+      "begin": "```",
+      "end":   "```",
+      "beginCaptures": {
+				"0": {
+					"name": "punctuation.definition.string.begin.n3"
+				}
+			},
+      "endCaptures": {
+				"0": {
+					"name": "punctuation.definition.string.end.n3"
+				}
+			},
+      "patterns": [
+				{ "include": "#string-character-escape" }
+			]
+    },
+    "string-character-escape": {
+			"name": "constant.character.escape.n3",
+			"match": "\\\\(x\\h{2}|[0-2][0-7]{0,2}|3[0-6][0-7]?|37[0-7]?|[4-7][0-7]?|.|$)"
+		},
+    "numeric": {
+      "patterns":[
+        { "include": "#double" },
+        { "include": "#decimal" },
+        { "include": "#integer" }
+      ]
+    },
+    "double": {
+      "name": "constant.numeric.double.n3",
+      "match": "(\\d+\\.\\d*[eE][+-]?\\d+)|(\\.\\d+[eE][+-]?\\d+)|(\\d+[eE][+-]?\\d+)"
+    },
+    "decimal": {
+      "name": "constant.numeric.decimal.n3",
+      "match": "\\d*\\.\\d+"
+    },
+    "integer": {
+      "name": "constant.numeric.integer.n3",
+      "match": "\\d+"
+    },
+    "boolean": {
+      "name": "constant.language.n3",
+      "match": "\\b(?i:true|false)\\b"
+    },
+    "datatype": {
+      "name": "meta.literal-datatype.n3",
+      "match": "\\^\\^"
+    },
+    "language-tag": {
+      "name": "meta.string-literal-language-tag.n3",
+      "match": "@(\\w+)",
+      "captures":{
+        "1":{
+          "name": "entity.name.class.n3"
+        }
+      }
+    },
+    "formula": {
+        "name": "meta.formula.n3",
+        "begin": "{",
+        "beginCaptures": {
+            "0": {
+                "name": "punctuation.definition.formula.begin.n3"
+            }
+        },
+        "end": "}",
+        "endCaptures": {
+            "0": {
+                "name": "punctuation.definition.formula.end.n3"
+            }
+        },
+        "patterns" : [
+          { "include": "#prefix" },
+          { "include": "#comment" },
+          { "include": "#iriref" },
+          { "include": "#qname" },
+          { "include": "#quickVar" },
+          { "include": "#specialPredicates" },
+          { "include": "#specialPredicates2" },
+          { "include": "#separators" },
+          { "include": "#datatype" },
+          { "include": "#pathSymbols" },
+          { "include": "#literals" },
+          { "include": "#language-tag" },
+          { "include": "#formula" },
+          { "include": "#list" },
+          { "include": "#bnode" }
+        ]
+    },
+    "list": {
+        "name": "meta.list.n3",
+        "begin": "\\(",
+        "beginCaptures": {
+            "0": {
+                "name": "punctuation.definition.list.begin.n3"
+            }
+        },
+        "end": "\\)",
+        "endCaptures": {
+            "0": {
+                "name": "punctuation.definition.list.end.n3"
+            }
+        },
+        "patterns" : [
+            { "include": "#comment" },
+            { "include": "#iriref" },
+            { "include": "#qname" },
+            { "include": "#quickVar" },
+            { "include": "#datatype" },
+            { "include": "#literals" },
+            { "include": "#language-tag" },
+            { "include": "#formula" },
+            { "include": "#list" },
+            { "include": "#bnode" }
+        ]
+    },
+    "bnode": {
+      "name": "meta.bnode.n3",
+      "begin": "\\[",
+      "beginCaptures": {
+          "0": {
+              "name": "punctuation.definition.bnode.begin.n3"
+          }
+      },
+      "end": "\\]",
+      "endCaptures": {
+          "0": {
+              "name": "punctuation.definition.bnode.end.n3"
+          }
+      },
+      "patterns" : [
+        { "include": "#comment" },
+        { "include": "#iriref" },
+        { "include": "#qname" },
+        { "include": "#quickVar" },
+        { "include": "#specialPredicates" },
+        { "include": "#specialPredicates2" },
+        { "include": "#separators" },
+        { "include": "#datatype" },
+        { "include": "#pathSymbols" },
+        { "include": "#literals" },
+        { "include": "#language-tag" },
+        { "include": "#formula" },
+        { "include": "#list" },
+        { "include": "#bnode" }
+      ]
+  }
+  }
+}
