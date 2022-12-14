@@ -21,6 +21,6 @@ function getN3ExecuteCommandArgs(execute: N3Execute): string[] {
         "--pass-only-new", 
         // "--pass-all",
         //"--output out.n3", 
-        // "--quiet",
+        "--quiet",
     ];
 }

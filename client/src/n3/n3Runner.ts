@@ -12,13 +12,14 @@ export class Runner {
     private _errors: Array<Buffer> = [];
 
     public runN3ExecuteCommand(command: string, args: string[], n3: string, cwd?: string) {
-        n3OutputChannel.clear();
-        n3OutputChannel.show();
+        // n3OutputChannel.clear();
+        // n3OutputChannel.show();
 
+        // n3OutputChannel.append("args? " + args + "\n");
         this._process = spawn(command, args, { cwd: cwd, shell: true });
 
         this._process.stdin.end(n3, () => {
-            //n3OutputChannel.append("file path written to stdin");
+            // n3OutputChannel.append("done writing to stdin\n");
         });
 
         this._process.stdout.on('data', (data) => {
@@ -30,8 +31,10 @@ export class Runner {
         });
 
         this._process.on("exit", async (code) => {
-            if (code == 1) {
-                window.showErrorMessage("n3 rules failed");
+            // n3OutputChannel.append("exited process: " + code + "\n");
+
+            if (code != 0) {
+                window.showErrorMessage(`n3 rules failed (exit code ${code})`);
 
                 let error = Buffer.concat(this._errors).toString().split("\n").join("\n");
                 n3OutputChannel.append(error);
@@ -41,7 +44,7 @@ export class Runner {
 
             // window.showInformationMessage("n3 rules successfully executed.");
 
-            //turn the buffer into a list of lines and then join them back together
+            // turn the buffer into a list of lines and then join them back together
             let output = Buffer.concat(this._output).toString().split("\n").join("\n");
             n3OutputChannel.append(output);
 

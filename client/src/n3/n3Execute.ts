@@ -1,5 +1,6 @@
 import { window, workspace } from "vscode";
 import { executeN3ExecuteCommand } from "./commandHandler";
+import { n3OutputChannel } from "./n3OutputChannel";
 
 export default interface N3Execute {
     reasoner: string
@@ -8,6 +9,9 @@ export default interface N3Execute {
 }
 
 export async function runN3Execute(): Promise<void> {
+    n3OutputChannel.clear();
+    n3OutputChannel.show();
+
     // let configuration = workspace.getConfiguration("n3");
     // let reasoner = configuration.get<string>("reasoner");
 
@@ -18,15 +22,52 @@ export async function runN3Execute(): Promise<void> {
 
     let reasoner = "opt/eye/bin/eye";
 
-    if (window.activeTextEditor === undefined) {
-        window.showErrorMessage("No valid n3 file opened");
+    // get a IO handle on the activeTextEditor file
+    let editor = window.activeTextEditor;
+
+    if (editor === undefined) {
+        window.showErrorMessage("No active text editor found.");
         return;
     }
-    // get a IO handle on the activeTextEditor file
-    let n3File = window.activeTextEditor.document.uri.fsPath;
+
+    // if (editor !== undefined)
+    //     n3OutputChannel.append("active? " + editor.document.uri.fsPath + "\n");
+
+    if (editor.document.uri.scheme == "untitled") {
+        window.showErrorMessage("File must be saved before n3 code can be executed.");
+        return;
+    }
+
+    // gotcha: if cursor is in terminal window, 
+    // then that one will be the activeTextEditor
+
+    // instead, try one of the (other) visible text editors
+    if (editor.document.uri.scheme == "output") {
+        editor = undefined;
+
+        // get first visible editor with "file" scheme
+        // (if multiple are visible (split screen), select first one)
+        for (let visibleEditor of window.visibleTextEditors) {
+
+            if (visibleEditor.document.uri.scheme == "file") {
+                editor = visibleEditor;
+                break;
+            }
+        }
+    }
+
+    // if (editor !== undefined)
+    //     n3OutputChannel.append("selected? " + JSON.stringify(editor.document) + "\n");
+
+    if (editor === undefined) {
+        window.showErrorMessage("No suitable text editor found.");
+        return;
+    }
+
+    let n3File = editor.document.uri.fsPath;
 
     if (n3File === undefined) {
-        window.showErrorMessage("No valid n3 file");
+        window.showErrorMessage("Could not get file path of n3 document.");
         return;
     }
 
