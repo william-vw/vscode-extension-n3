@@ -44,8 +44,7 @@ export class Runner {
 
             // window.showInformationMessage("n3 rules successfully executed.");
 
-            // turn the buffer into a list of lines and then join them back together
-            let output = Buffer.concat(this._output).toString().split("\n").join("\n");
+            let output = Buffer.concat(this._output).toString();
             n3OutputChannel.append(output);
 
             // this._output = [];
@@ -60,7 +59,7 @@ export class Runner {
             //         // window.showInformationMessage(`child process close all stdio with code ${code}`);
             //     });
             //     python.on('close', (code) => {
-            //         let formatted = Buffer.concat(this._output).toString().split("\n").join("\n");
+            //         let formatted = Buffer.concat(this._output).toString();
             //         n3OutputChannel.append(formatted);
             //     });
 
