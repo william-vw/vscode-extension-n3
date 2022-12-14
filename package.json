@@ -59,8 +59,18 @@
 		],
 		"configuration": {
 			"type": "object",
-			"title": "N3 configuration",
+			"title": "Notation3",
 			"properties": {
+				"n3Exec.onlyShowInferences": {
+					"type": "boolean",
+					"default": true,
+					"description": "Only show inferences and not the full deductive closure"
+				},
+				"n3Exec.prettyPrintOutput": {
+					"type": "boolean",
+					"default": false,
+					"description": "Pretty-print the N3 execution output using python rdflib."
+				},
 				"n3LspServer.maxNumberOfProblems": {
 					"scope": "resource",
 					"type": "number",
