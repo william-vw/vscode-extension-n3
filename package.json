@@ -69,7 +69,7 @@
 				"n3Exec.prettyPrintOutput": {
 					"type": "boolean",
 					"default": false,
-					"description": "Pretty-print the N3 execution output using python rdflib."
+					"description": "Pretty-print the N3 execution output using rdflib.\n*** does not support full N3 expressivity, such as variables in the outer scope ***"
 				},
 				"n3LspServer.maxNumberOfProblems": {
 					"scope": "resource",
@@ -108,7 +108,8 @@
 		"eslint": "^8.26.0",
 		"mocha": "^9.2.1",
 		"typescript": "^4.9.4",
-		"vscode-test": "^1.3.0"
+		"vscode-test": "^1.3.0",
+		"rdflib": "2.2.21"
 	},
 	"dependencies": {
 		"python-shell": "^3.0.1",

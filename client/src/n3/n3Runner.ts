@@ -1,9 +1,8 @@
 import { ChildProcess, spawn } from "child_process";
-import { window } from "vscode";
+import { window, workspace } from "vscode";
 import { n3OutputChannel } from "./n3OutputChannel";
 
-// import $rdf = require('rdflib');
-// const store = $rdf.graph()
+const $rdf = require('rdflib')
 
 export class Runner {
 
@@ -44,28 +43,27 @@ export class Runner {
             // window.showInformationMessage("n3 rules successfully executed.");
 
             let output = Buffer.concat(this._output).toString();
-            n3OutputChannel.append(output);
 
-            // this._output = [];
-            // try {
-            //     const python = spawn('python3', ['format_results.py', output])
+            let config = workspace.getConfiguration("n3Exec");
+            if (!config.get("prettyPrintOutput")) {
+                n3OutputChannel.append(output);
 
-            //     python.stdout.on('data', (data) => {
-            //         this._output.push(data);
-            //     });
-            //     python.stderr.on('data', (code) => {
-            //         //console.log(`stderr: ${code}`);
-            //         // window.showInformationMessage(`child process close all stdio with code ${code}`);
-            //     });
-            //     python.on('close', (code) => {
-            //         let formatted = Buffer.concat(this._output).toString();
-            //         n3OutputChannel.append(formatted);
-            //     });
+                return;
+            }
 
-            // } catch (e) {
-            //     window.showErrorMessage("Failed serializing result to output window");
-            //     console.error(e);
-            // }
+            this._output = [];
+
+            try {
+                const store = $rdf.graph();
+
+                let doc = $rdf.sym('https://example.com/alice/card');
+                $rdf.parse(output, store, doc.uri, 'text/n3');
+
+                n3OutputChannel.append($rdf.serialize(doc, store, doc.uri, 'text/n3'));
+                
+            } catch (e) {
+                n3OutputChannel.append("error pretty-printing output: " + e);
+            }
         });
     }
 }
