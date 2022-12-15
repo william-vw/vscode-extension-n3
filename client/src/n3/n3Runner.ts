@@ -56,7 +56,7 @@ export class Runner {
             try {
                 const store = $rdf.graph();
 
-                let doc = $rdf.sym('https://example.com/alice/card');
+                let doc = $rdf.sym('https://example.com/');
                 $rdf.parse(output, store, doc.uri, 'text/n3');
 
                 n3OutputChannel.append($rdf.serialize(doc, store, doc.uri, 'text/n3'));

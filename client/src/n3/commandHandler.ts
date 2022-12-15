@@ -3,7 +3,7 @@ import {Runner} from "./n3Runner";
 import * as path from 'path';
 import N3Execute from "./n3Execute";
 
-import { n3OutputChannel } from "./n3OutputChannel";
+// import { n3OutputChannel } from "./n3OutputChannel";
 
 export async function executeN3ExecuteCommand(execute: N3Execute) {
     let args = getN3ExecuteCommandArgs(execute);

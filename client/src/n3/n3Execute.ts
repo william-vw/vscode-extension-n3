@@ -1,6 +1,6 @@
 import { window, workspace } from "vscode";
 import { executeN3ExecuteCommand } from "./commandHandler";
-import { n3OutputChannel } from "./n3OutputChannel";
+// import { n3OutputChannel } from "./n3OutputChannel";
 
 export default interface N3Execute {
     reasoner: string
@@ -9,8 +9,8 @@ export default interface N3Execute {
 }
 
 export async function runN3Execute(): Promise<void> {
-    n3OutputChannel.clear();
-    n3OutputChannel.show();
+    // n3OutputChannel.clear();
+    // n3OutputChannel.show();
 
     // let configuration = workspace.getConfiguration("n3");
     // let reasoner = configuration.get<string>("reasoner");
