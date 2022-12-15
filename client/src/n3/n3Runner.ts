@@ -11,6 +11,7 @@ export class Runner {
     private _errors: Array<Buffer> = [];
 
     public runN3ExecuteCommand(command: string, args: string[], n3: string, cwd?: string) {
+        n3OutputChannel.clear();
         n3OutputChannel.show();
 
         // n3OutputChannel.append("args? " + args + "\n");
