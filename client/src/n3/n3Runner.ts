@@ -61,7 +61,6 @@ export class Runner {
 
             try {
                 // - rdflib.py (PythonShell)
-
                 let options = {
                     args: [output],
                     mode: 'text',
@@ -69,15 +68,17 @@ export class Runner {
                 }
 
                 let path = context.asAbsolutePath("client/src/n3/format_results.py");
-                n3OutputChannel.append("path? " + path + "\n");
+                // n3OutputChannel.append("path? " + path + "\n");
                 PythonShell.run(path, options, function (err, results) {
                     if (err) {
                         window.showErrorMessage("pretty-printing failed");
                         n3OutputChannel.append(err);
 
-                    } else
+                    } else {
+                        results = results.join("\n");
                         // results is an array consisting of messages collected during execution
-                        n3OutputChannel.append("results:\n" + results);
+                        n3OutputChannel.append(results);
+                    }
                 });
 
                 // - rdflib.py (spawn)
