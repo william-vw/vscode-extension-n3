@@ -1,4 +1,4 @@
-import { window, workspace } from "vscode";
+import { ExtensionContext, window, workspace } from "vscode";
 import { executeN3ExecuteCommand } from "./commandHandler";
 // import { n3OutputChannel } from "./n3OutputChannel";
 
@@ -8,7 +8,7 @@ export default interface N3Execute {
     // out: string
 }
 
-export async function runN3Execute(): Promise<void> {
+export async function runN3Execute(context: ExtensionContext): Promise<void> {
     // n3OutputChannel.clear();
     // n3OutputChannel.show();
 
@@ -77,5 +77,5 @@ export async function runN3Execute(): Promise<void> {
         // out: "out.n3"
     };
 
-    await executeN3ExecuteCommand(n3Execute);
+    await executeN3ExecuteCommand(n3Execute, context);
 }

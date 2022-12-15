@@ -65,7 +65,7 @@ export function activate(context: ExtensionContext) {
 	// - N3Execute
 
 	context.subscriptions.push(commands.registerCommand("n3.execute", async () => {
-        await runN3Execute();
+        await runN3Execute(context);
     }));
 }
 
