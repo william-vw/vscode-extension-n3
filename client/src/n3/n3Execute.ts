@@ -20,7 +20,8 @@ export async function runN3Execute(context: ExtensionContext): Promise<void> {
     //     return;
     // }
 
-    let reasoner = "opt/eye/bin/eye";
+    // let reasoner = "opt/eye/bin/eye";
+    let reasoner = `swipl -x ${context.asAbsolutePath("opt/eye/lib/eye.pvm")} -- `;
 
     // get a IO handle on the activeTextEditor file
     let editor = window.activeTextEditor;
@@ -70,8 +71,6 @@ export async function runN3Execute(context: ExtensionContext): Promise<void> {
         window.showErrorMessage("Could not get file path of n3 document.");
         return;
     }
-
-    reasoner = context.asAbsolutePath(reasoner);
 
     const n3Execute: N3Execute = {
         reasoner: reasoner,
