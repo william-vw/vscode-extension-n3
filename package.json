@@ -69,7 +69,7 @@
 				"n3Exec.prettyPrintOutput": {
 					"type": "boolean",
 					"default": false,
-					"description": "Pretty-print the N3 execution output using rdflib.\n*** does not support full N3 expressivity, such as variables in the outer scope ***\n*** currently outputs lists as first/rest pairs ***"
+					"description": "Pretty-print the N3 execution output using python rdflib.\n*** Requires python3 to be installed on your system ***\n*** Does not support full n3 expressivity (e.g., lists as subjects) ***"
 				},
 				"n3LspServer.maxNumberOfProblems": {
 					"scope": "resource",

@@ -71,6 +71,8 @@ export async function runN3Execute(context: ExtensionContext): Promise<void> {
         return;
     }
 
+    reasoner = context.asAbsolutePath(reasoner);
+
     const n3Execute: N3Execute = {
         reasoner: reasoner,
         n3: n3File,

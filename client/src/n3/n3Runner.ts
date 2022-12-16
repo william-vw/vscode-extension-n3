@@ -16,7 +16,7 @@ export class Runner {
         n3OutputChannel.clear();
         n3OutputChannel.show();
 
-        // n3OutputChannel.append("args? " + args + "\n");
+        // n3OutputChannel.append("command? " + command + "\n");
         this._process = spawn(command, args, { cwd: cwd, shell: true });
 
         this._process.stdin.end(n3, () => {
