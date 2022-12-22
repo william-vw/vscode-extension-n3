@@ -1,3 +1,7 @@
+# NOTES
+previously needed "compile": true in client/tsconfig.json, server/tsconfig.json
+but, now it resulted in these two projects not compiling somehow
+
 # LSP Example
 
 Heavily documented sample code for https://code.visualstudio.com/api/language-extensions/language-server-extension-guide

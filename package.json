@@ -20,7 +20,7 @@
 		"onLanguage:n3",
 		"onCommand:n3.execute"
 	],
-	"main": "./client/out/extension",
+	"main": "./client/out/extension.js",
 	"contributes": {
 		"languages": [
 			{

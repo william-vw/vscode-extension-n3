@@ -16,11 +16,12 @@ export class Runner {
         n3OutputChannel.clear();
         n3OutputChannel.show();
 
-        // n3OutputChannel.append("command? " + command + "\n");
+        // command = "eye";
+        // n3OutputChannel.append("command?\n" + command + "\n" + JSON.stringify(args));
         this._process = spawn(command, args, { cwd: cwd, shell: true });
 
         this._process.stdin.end(n3, () => {
-            // n3OutputChannel.append("done writing to stdin\n");
+            // n3OutputChannel.append("\ndone writing to stdin\n");
         });
 
         this._process.stdout.on('data', (data) => {

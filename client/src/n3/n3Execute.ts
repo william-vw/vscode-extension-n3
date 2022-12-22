@@ -20,8 +20,8 @@ export async function runN3Execute(context: ExtensionContext): Promise<void> {
     //     return;
     // }
 
-    // let reasoner = "opt/eye/bin/eye";
-    let reasoner = `swipl -x ${context.asAbsolutePath("opt/eye/lib/eye.pvm")} -- `;
+    let reasoner = "eye";
+    // let reasoner = `swipl -x ${context.asAbsolutePath("opt/eye/lib/eye.pvm")} -- `;
 
     // get a IO handle on the activeTextEditor file
     let editor = window.activeTextEditor;
