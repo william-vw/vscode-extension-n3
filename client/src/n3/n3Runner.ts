@@ -36,6 +36,12 @@ export class Runner {
             // n3OutputChannel.append("exited process: " + code + "\n");
 
             if (code != 0) {
+                if (code == 127) {
+                    window.showErrorMessage(`n3 rules failed.
+                        please install latest version of eye at https://github.com/eyereasoner/eye/releases`);
+                    return;    
+                }
+
                 window.showErrorMessage(`n3 rules failed (exit code ${code})`);
 
                 let error = Buffer.concat(this._errors).toString();
