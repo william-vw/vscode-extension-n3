@@ -45,14 +45,14 @@
 		],
 		"themes": [
 			{
+				"label": "Notation3 Dark",
+				"uiTheme": "vs-dark",
+				"path": "./themes/n3-dark-color-theme.json"
+			},
+			{
 				"label": "Notation3 Light",
 				"uiTheme": "vs",
 				"path": "./themes/n3-light-color-theme.json"
-			},
-			{
-				"label": "Notation3 Dark",
-				"uiTheme": "vs",
-				"path": "./themes/n3-dark-color-theme.json"
 			}
 		],
 		"commands": [
