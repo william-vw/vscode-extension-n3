@@ -438,7 +438,7 @@
 		{
 			"scope": "entity.name.iriref",
 			"settings": {
-				"foreground": "#ffaf72"
+				"foreground": "#ffbd8b"
 			}
 		},
 		{
@@ -450,7 +450,7 @@
 		{
 			"scope": "support.variable",
 			"settings": {
-				"foreground": "#80d7a6"
+				"foreground": "#8dd4ac"
 			}
 		},
 		{
@@ -462,7 +462,7 @@
 		{
 			"scope": "entity.name.class",
 			"settings": {
-				"foreground": "#80d7a6"
+				"foreground": "#8dd4ac"
 			}
 		}
 	]
