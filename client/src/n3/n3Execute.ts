@@ -12,7 +12,7 @@ export async function runN3Execute(context: ExtensionContext): Promise<void> {
     // n3OutputChannel.clear();
     // n3OutputChannel.show();
 
-    let config = workspace.getConfiguration("n3Exec");
+    let config = workspace.getConfiguration("n3Execute");
     let reasoner = config.get<string>("reasoner");
 
     if (reasoner === undefined) {

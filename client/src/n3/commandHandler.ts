@@ -6,7 +6,7 @@ import N3Execute from "./n3Execute";
 // import { n3OutputChannel } from "./n3OutputChannel";
 
 export async function executeN3ExecuteCommand(execute: N3Execute, context: ExtensionContext) {
-    let config = workspace.getConfiguration("n3Exec");
+    let config = workspace.getConfiguration("n3Execute");
 
     let command = null, args = null;
     switch (execute.reasoner) {
@@ -34,13 +34,20 @@ export async function executeN3ExecuteCommand(execute: N3Execute, context: Exten
 
 function eyeCommandArgs(execute: N3Execute, config: WorkspaceConfiguration): string[] {
     let passCmd = (config.get("onlyShowInferences") ? "--pass-only-new" : "--pass-all");
-
-    return [
+    
+    let args = [
         "--nope",
         `--n3 "${execute.n3}"`,
         passCmd,
-        "--quiet",
+        "--quiet"
     ];
+
+    if (config.get("extraEyeArguments")) {
+        let extraArgs = config.get<string>("extraEyeArguments");
+        args.push(extraArgs);
+    }
+
+    return args;
 }
 
 function jen3CommandArgs(execute: N3Execute, config: WorkspaceConfiguration): string[] {
