@@ -24,7 +24,7 @@ export async function runN3Execute(context: ExtensionContext): Promise<void> {
     // let reasoner = `swipl -x ${context.asAbsolutePath("opt/eye/lib/eye.pvm")} -- `;
 
     if (reasoner == "jen3" && config.get<string>("jen3Path") == "") {
-        window.showErrorMessage("jen3 reasoner path must be indicated in settings.");
+        window.showErrorMessage("Indicate the jen3 reasoner path in settings.");
         return;
     }
 
@@ -40,7 +40,7 @@ export async function runN3Execute(context: ExtensionContext): Promise<void> {
     //     n3OutputChannel.append("active? " + editor.document.uri.fsPath + "\n");
 
     if (editor.document.uri.scheme == "untitled") {
-        window.showErrorMessage("File must be saved before n3 code can be executed.");
+        window.showErrorMessage("Save file before executing n3 code.");
         return;
     }
 

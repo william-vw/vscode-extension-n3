@@ -438,7 +438,7 @@
 		{
 			"scope": "entity.name.iriref",
 			"settings": {
-				"foreground": "#ffbd8b"
+				"foreground": "#f59e5b"
 			}
 		},
 		{
