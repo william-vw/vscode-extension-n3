@@ -54,7 +54,7 @@ export class Runner {
             let output = Buffer.concat(this._output).toString();
 
             let config = workspace.getConfiguration("n3Exec");
-            if (!config.get("prettyPrintOutput")) {
+            if (!config.get("prettyPrintEyeOutput")) {
                 n3OutputChannel.append(output);
 
                 return;
