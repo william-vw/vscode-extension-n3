@@ -12,17 +12,16 @@ export class Runner {
     private _output: Array<Buffer> = [];
     private _errors: Array<Buffer> = [];
 
-    public runN3ExecuteCommand(command: string, args: string[], n3: string, cwd: string, context: ExtensionContext) {
+    public runN3ExecuteCommand(command: string, args: string[], cwd: string, context: ExtensionContext) {
         n3OutputChannel.clear();
         n3OutputChannel.show();
 
-        // command = "eye";
-        // n3OutputChannel.append("command?\n" + command + "\n" + JSON.stringify(args));
+        // n3OutputChannel.append("command?\n" + command + "\n" + JSON.stringify(args) + "\n\n");
         this._process = spawn(command, args, { cwd: cwd, shell: true });
 
-        this._process.stdin.end(n3, () => {
-            // n3OutputChannel.append("\ndone writing to stdin\n");
-        });
+        // this._process.stdin.end(n3, () => {
+        //     // n3OutputChannel.append("\ndone writing to stdin\n");
+        // });
 
         this._process.stdout.on('data', (data) => {
             this._output.push(data);
@@ -42,7 +41,7 @@ export class Runner {
                     return;    
                 }
 
-                window.showErrorMessage(`n3 rules failed (exit code ${code})`);
+                window.showErrorMessage(`n3 rules failed (exit code ${code}). see output for details.`);
 
                 let error = Buffer.concat(this._errors).toString();
                 n3OutputChannel.append(error);
@@ -78,7 +77,7 @@ export class Runner {
                 // n3OutputChannel.append("path? " + path + "\n");
                 PythonShell.run(path, options, function (err, results) {
                     if (err) {
-                        window.showErrorMessage("pretty-printing failed");
+                        window.showErrorMessage("pretty-printing failed. see output for details.");
                         n3OutputChannel.append(err);
 
                     } else {

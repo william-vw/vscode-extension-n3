@@ -66,15 +66,33 @@
 			"type": "object",
 			"title": "Notation3",
 			"properties": {
+				"n3Exec.reasoner": {
+					"order": 0,
+					"type": "string",
+					"enum": [
+						"eye",
+						"jen3"
+					],
+					"default": "eye",
+					"description": "Choose the N3 reasoner to execute N3 code"
+				},
+				"n3Exec.jen3Path": {
+					"order": 1,
+					"type": "string",
+					"default": "",
+					"description": "Path to the jen3 JAR file (download at https://github.com/william-vw/jen3/releases)"
+				},
 				"n3Exec.onlyShowInferences": {
+					"order": 2,
 					"type": "boolean",
 					"default": true,
 					"description": "Only show inferences and not the full deductive closure"
 				},
-				"n3Exec.prettyPrintOutput": {
+				"n3Exec.prettyPrintEyeOutput": {
+					"order": 3,
 					"type": "boolean",
 					"default": false,
-					"description": "Pretty-print the N3 execution output using python rdflib.\n*** Requires python3 to be installed on your system ***\n*** Does not support full n3 expressivity (e.g., lists as subjects) ***"
+					"description": "Pretty-print the eye output using python rdflib.\n*** Requires python3 to be installed on your system ***\n*** Does not support full n3 expressivity (e.g., lists as subjects) ***"
 				},
 				"n3LspServer.maxNumberOfProblems": {
 					"scope": "resource",

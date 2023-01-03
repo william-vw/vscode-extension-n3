@@ -12,16 +12,21 @@ export async function runN3Execute(context: ExtensionContext): Promise<void> {
     // n3OutputChannel.clear();
     // n3OutputChannel.show();
 
-    // let configuration = workspace.getConfiguration("n3");
-    // let reasoner = configuration.get<string>("reasoner");
+    let config = workspace.getConfiguration("n3Exec");
+    let reasoner = config.get<string>("reasoner");
 
-    // if (reasoner === undefined) {
-    //     window.showErrorMessage("No n3 reasoner configured");
-    //     return;
-    // }
+    if (reasoner === undefined) {
+        window.showErrorMessage("No n3 reasoner configured");
+        return;
+    }
 
-    let reasoner = "eye";
+    // let reasoner = "eye";
     // let reasoner = `swipl -x ${context.asAbsolutePath("opt/eye/lib/eye.pvm")} -- `;
+
+    if (reasoner == "jen3" && config.get<string>("jen3Path") == "") {
+        window.showErrorMessage("jen3 reasoner path must be indicated in settings.");
+        return;
+    }
 
     // get a IO handle on the activeTextEditor file
     let editor = window.activeTextEditor;
