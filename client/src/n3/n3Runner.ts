@@ -16,6 +16,9 @@ export class Runner {
         n3OutputChannel.clear();
         n3OutputChannel.show();
 
+        let config = workspace.getConfiguration("n3Execute");
+        let reasoner = config.get<string>("reasoner");
+
         // n3OutputChannel.append("command?\n" + command + "\n" + JSON.stringify(args) + "\n\n");
         this._process = spawn(command, args, { cwd: cwd, shell: true });
 
@@ -35,7 +38,7 @@ export class Runner {
             // n3OutputChannel.append("exited process: " + code + "\n");
 
             if (code != 0) {
-                if (code == 127) {
+                if (reasoner == "eye" && code == 127) {
                     window.showErrorMessage(`n3 rules failed.
                         please install latest version of eye at https://github.com/eyereasoner/eye/releases`);
                     return;    
@@ -53,8 +56,7 @@ export class Runner {
 
             let output = Buffer.concat(this._output).toString();
 
-            let config = workspace.getConfiguration("n3Execute");
-            if (!config.get("prettyPrintEyeOutput")) {
+            if (reasoner != "eye" || !config.get("prettyPrintEyeOutput")) {
                 n3OutputChannel.append(output);
 
                 return;
