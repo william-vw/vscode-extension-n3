@@ -60,7 +60,7 @@
     },
     "specialPredicates": {
       "name": "meta.specialPredicate.n3",
-      "match": "\\s(a)|(=)\\s",
+      "match": "\\s(a)\\s|\\s(=)\\s",
       "captures": {
         "1":{
           "name": "keyword.control.type.n3" 
