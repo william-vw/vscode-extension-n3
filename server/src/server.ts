@@ -49,7 +49,7 @@ let namespaces: Map<string, string>;
 
 connection.onInitialize((params: InitializeParams) => {
 	namespaces = new Map(Object.entries(params.initializationOptions));
-	connection.console.log("init: " + JSON.stringify(namespaces, null, 4));
+	// connection.console.log("init: " + [...namespaces]);
 
 	const capabilities = params.capabilities;
 
@@ -71,9 +71,9 @@ connection.onInitialize((params: InitializeParams) => {
 		capabilities: {
 			textDocumentSync: TextDocumentSyncKind.Incremental,
 			// Tell the client that this server supports code completion.
-			completionProvider: {
-				resolveProvider: true
-			},
+			// completionProvider: {
+			// 	resolveProvider: true
+			// },
 			codeActionProvider: true,
 			documentFormattingProvider: true
 		}

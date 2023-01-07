@@ -100,13 +100,22 @@
 					"default": "",
 					"description": "Provide additional command line arguments to eye."
 				},
+				"n3LspServer.namespacesFile": {
+					"order": 5,
+					"scope": "resource",
+					"type": "string",
+					"default": "",
+					"description": "Path to a JSON file with a single object that maps prefixes to their namepace URIs.\n*** Restart extension to load new namespaces ***\n*** See https://github.com/william-vw/vscode-extension-n3/blob/main/namespaces.json for an example ***"
+				},
 				"n3LspServer.maxNumberOfProblems": {
+					"order": 6,
 					"scope": "resource",
 					"type": "number",
 					"default": 100,
 					"description": "Controls the maximum number of problems produced by the server."
 				},
 				"n3LspServer.trace.server": {
+					"order": 7,
 					"scope": "window",
 					"type": "string",
 					"enum": [

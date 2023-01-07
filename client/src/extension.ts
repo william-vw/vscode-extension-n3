@@ -4,7 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 
 import * as path from 'path';
-import { commands, ExtensionContext, languages, workspace } from 'vscode';
+import { commands, ExtensionContext, languages, window, workspace } from 'vscode';
 
 import {
 	LanguageClient,
@@ -14,10 +14,13 @@ import {
 } from 'vscode-languageclient/node';
 
 import { runN3Execute } from './n3/n3Execute';
+import { n3OutputChannel } from "./n3/n3OutputChannel";
 
 let client: LanguageClient;
 
 export function activate(context: ExtensionContext) {
+	n3OutputChannel.show();
+
 	// - LSP client
 
 	// The server is implemented in node
@@ -39,6 +42,23 @@ export function activate(context: ExtensionContext) {
 		}
 	};
 
+	let config = workspace.getConfiguration("n3LspServer");
+	let configNsPath = config.get<string>("namespacesFile");
+
+	let ns;
+	if (configNsPath) {
+		try {
+			ns = require(configNsPath);
+		} catch (e) {
+			window.showErrorMessage(`error loading namespaces file ${configNsPath}`)
+		}
+	}
+	if (ns == undefined) {
+		let nsPath = context.asAbsolutePath("namespaces.json");
+		ns = require(nsPath);
+	}
+
+
 	// Options to control the language client
 	const clientOptions: LanguageClientOptions = {
 		// Register the server for plain text documents
@@ -46,7 +66,8 @@ export function activate(context: ExtensionContext) {
 		synchronize: {
 			// Notify the server about file changes to '.clientrc files contained in the workspace
 			fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
-		}
+		},
+		initializationOptions: ns
 	};
 
 	// Create the language client and start the client.
@@ -63,8 +84,8 @@ export function activate(context: ExtensionContext) {
 	// - N3Execute
 
 	context.subscriptions.push(commands.registerCommand("n3.execute", async () => {
-        await runN3Execute(context);
-    }));
+		await runN3Execute(context);
+	}));
 }
 
 export function deactivate(): Thenable<void> | undefined {
