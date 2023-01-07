@@ -4,10 +4,9 @@
  * ------------------------------------------------------------------------------------------ */
 
 import * as path from 'path';
-import { commands, workspace, ExtensionContext } from 'vscode';
+import { commands, ExtensionContext, languages, workspace } from 'vscode';
 
 import {
-	ConnectionError,
 	LanguageClient,
 	LanguageClientOptions,
 	ServerOptions,
@@ -60,7 +59,6 @@ export function activate(context: ExtensionContext) {
 
 	// Start the client. This will also launch the server
 	client.start();
-
 
 	// - N3Execute
 
