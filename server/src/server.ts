@@ -30,7 +30,6 @@ import {
 
 const n3 = require('./n3Main.js');
 // import * as should from 'should';
-import namespaces from './namespaces'
 import { spawnSync } from "child_process";
 import { format, join, resolve } from 'path';
 import { PythonShell } from 'python-shell';
@@ -46,8 +45,12 @@ const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
 let hasDiagnosticRelatedInformationCapability = false;
+let namespaces: Map<string, string>;
 
 connection.onInitialize((params: InitializeParams) => {
+	namespaces = new Map(Object.entries(params.initializationOptions));
+	connection.console.log("init: " + JSON.stringify(namespaces, null, 4));
+
 	const capabilities = params.capabilities;
 
 	// Does the client support the `workspace/configuration` request?
@@ -72,11 +75,7 @@ connection.onInitialize((params: InitializeParams) => {
 				resolveProvider: true
 			},
 			codeActionProvider: true,
-			documentFormattingProvider: true,
-
-			executeCommandProvider: {
-				commands: ['sample.fixMe']
-			}
+			documentFormattingProvider: true
 		}
 	};
 	if (hasWorkspaceFolderCapability) {
@@ -157,7 +156,6 @@ documents.onDidChangeContent(change => {
 
 const MSG_UNKNOWN_PREFIX = "Unknown prefix: ";
 
-
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// In this simple example we get the settings for every validate run.
 	// const settings = await getDocumentSettings(textDocument.uri);
@@ -236,7 +234,6 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
 connection.onCodeAction((params) => {
 	// connection.console.log("params? " + JSON.stringify(params, null, 4));
-
 	let diagnostics = params.context.diagnostics;
 
 	// connection.console.log("diagns? " + JSON.stringify(diagnostics, null, 4));
@@ -245,8 +242,8 @@ connection.onCodeAction((params) => {
 		if (diagnostic.message.startsWith(MSG_UNKNOWN_PREFIX)) {
 			let prefix: string = diagnostic.message.substring(MSG_UNKNOWN_PREFIX.length);
 
-			if (namespaces[prefix]) {
-				let ns = namespaces[prefix];
+			if (namespaces.has(prefix)) {
+				let ns = namespaces.get(prefix);
 				let directive = `@prefix ${prefix}: <${ns}> . \n`;
 
 				const codeAction: CodeAction = {
