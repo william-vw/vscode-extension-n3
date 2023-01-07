@@ -75,7 +75,7 @@ connection.onInitialize((params: InitializeParams) => {
 			// 	resolveProvider: true
 			// },
 			codeActionProvider: true,
-			documentFormattingProvider: true
+			// documentFormattingProvider: true
 		}
 	};
 	if (hasWorkspaceFolderCapability) {
