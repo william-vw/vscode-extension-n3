@@ -1,8 +1,0 @@
-# NOTES
-previously needed "compile": true in client/tsconfig.json, server/tsconfig.json
-but, after a while, it resulted in these two projects not compiling somehow.
-
-package.json
-before esbuild:
-scripts:
-    "vscode:prepublish": "npm run compile"

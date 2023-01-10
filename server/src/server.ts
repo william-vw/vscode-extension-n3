@@ -29,6 +29,7 @@ import {
 } from 'vscode-languageserver-textdocument';
 
 const n3 = require('./n3Main.js');
+
 // import * as should from 'should';
 import { spawnSync } from "child_process";
 import { format, join, resolve } from 'path';
@@ -168,6 +169,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
 	const diagnostics: Diagnostic[] = [];
 
+	connection.console.log("n3?\n" + JSON.stringify(n3, null, 4));
 	n3.parse(text,
 		{
 			syntaxError: function (recognizer: any, offendingSymbol: any,
