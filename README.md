@@ -11,7 +11,7 @@ N3 code can be executed using [eye](https://github.com/eyereasoner/eye) or [jen3
 - Eye can be found [here](https://github.com/eyereasoner/eye/releases) - follow the installation instructions.
 - Jen3 can be found [here](https://github.com/william-vw/jen3/releases) - download the latest release and point to its path in the extension settings.  
 
-Namespaces are suggested based on a [default file](https://raw.githubusercontent.com/william-vw/vscode-extension-n3/main/namespaces.json) that is currently quite limited. You can extend this file and point to its path in the extension settings.
+Namespaces are suggested based on a [default file](https://github.com/william-vw/vscode-extension-n3/blob/main/namespaces.json) that is currently quite limited. You can extend this file and point to its path in the extension settings.
 
 
 Please post any issues on the [github repo](https://github.com/william-vw/vscode-extension-n3).
