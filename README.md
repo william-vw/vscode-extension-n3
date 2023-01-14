@@ -7,7 +7,7 @@ The language features are based on the latest [N3 grammar](https://w3c.github.io
 To use a code theme, open an .n3 file and select the Notation3 Light or Notation3 Dark theme (Command Palette - search "color theme").
 
 
-N3 code can be executed using [eye reasoner](https://github.com/eyereasoner/eye) or [jen3](https://github.com/william-vw/jen3). (Command Palette - "N3: Execute N3 Code".)
+N3 code can be executed using [eye](https://github.com/eyereasoner/eye) or [jen3](https://github.com/william-vw/jen3) reasoning engines. (Command Palette - "N3: Execute N3 Code".)
 - Eye Reasoner can be found [here](https://github.com/eyereasoner/eye/releases) - follow the installation instructions.
 - Jen3 Reasoner can be found [here](https://github.com/william-vw/jen3/releases) - download the latest release and point to its path in the extension settings.  
 
