@@ -5,7 +5,7 @@ import N3Execute from "./n3Execute";
 
 // import { n3OutputChannel } from "./n3OutputChannel";
 
-export async function executeN3ExecuteCommand(execute: N3Execute, context: ExtensionContext) {
+export async function executeN3Command(execute: N3Execute, context: ExtensionContext) {
     let config = workspace.getConfiguration("n3Execute");
 
     let command = null, args = null;
@@ -29,7 +29,7 @@ export async function executeN3ExecuteCommand(execute: N3Execute, context: Exten
     }
 
     let commandRunner: Runner = new Runner();
-    commandRunner.runN3ExecuteCommand(command, args, cwd, context);
+    commandRunner.runN3Command(command, args, cwd, execute, context);
 }
 
 function eyeCommandArgs(execute: N3Execute, config: WorkspaceConfiguration): string[] {

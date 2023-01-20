@@ -17,6 +17,10 @@ class N3OutputChannel implements Disposable {
         this.channel.append(message);
     }
 
+    public debug(message: any, object: any): void {
+        this.channel.appendLine(message + ": " + JSON.stringify(object, null, 4));
+    }
+
     public show(): void {
         this.channel.show();
     }

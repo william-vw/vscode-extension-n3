@@ -13,7 +13,7 @@ import {
 	TransportKind
 } from 'vscode-languageclient/node';
 
-import { runN3Execute } from './n3/n3Execute';
+import { runN3Execute, runN3Debug } from './n3/n3Execute';
 import { n3OutputChannel } from "./n3/n3OutputChannel";
 
 let client: LanguageClient;
@@ -85,6 +85,12 @@ export function activate(context: ExtensionContext) {
 
 	context.subscriptions.push(commands.registerCommand("n3.execute", async () => {
 		await runN3Execute(context);
+	}));
+
+	// - N3Debug
+
+	context.subscriptions.push(commands.registerCommand("n3.debug", async () => {
+		await runN3Debug(context);
 	}));
 }
 

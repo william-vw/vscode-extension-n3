@@ -1,15 +1,18 @@
 import { ExtensionContext, window, workspace } from "vscode";
-import { executeN3ExecuteCommand } from "./commandHandler";
-// import { n3OutputChannel } from "./n3OutputChannel";
+import { executeN3Command } from "./commandHandler";
+import { n3OutputChannel } from "./n3OutputChannel";
+
+const util = require('util');
+const exec = util.promisify(require('child_process').exec);
 
 export default interface N3Execute {
     reasoner: string
     n3: string
+    debug: boolean
     // out: string
 }
 
 export async function runN3Execute(context: ExtensionContext): Promise<void> {
-    // n3OutputChannel.clear();
     // n3OutputChannel.show();
 
     let config = workspace.getConfiguration("n3Execute");
@@ -28,6 +31,40 @@ export async function runN3Execute(context: ExtensionContext): Promise<void> {
         return;
     }
 
+    runN3(reasoner, false, context);
+}
+
+export async function runN3Debug(context: ExtensionContext): Promise<void> {
+    n3OutputChannel.show();
+
+    let reasoner = "eye";
+    if (checkEyeVersion())
+        runN3(reasoner, true, context);
+}
+
+async function checkEyeVersion(): Promise<boolean> {
+    try {
+        const { stdout, stderr } = await exec("eye --version");
+
+        let matches: Array<string> = /EYE v(.+).(.+).([^\s]+)/.exec(stderr);
+        let majorVersion: number = parseInt(matches[1]);
+
+        if (majorVersion > 20) {
+            window.showErrorMessage(`for debugging, please install latest version of eye at https://github.com/eyereasoner/eye/releases (found major version ${majorVersion})`);
+            return false;
+        }
+
+        return true;
+
+    } catch (e) {
+        // n3OutputChannel.appendLine(e);
+        window.showErrorMessage(`please install latest version of eye at https://github.com/eyereasoner/eye/releases`);
+
+        return false;
+    }
+}
+
+async function runN3(reasoner: string, debug: boolean, context: ExtensionContext): Promise<void> {
     // get a IO handle on the activeTextEditor file
     let editor = window.activeTextEditor;
 
@@ -80,8 +117,8 @@ export async function runN3Execute(context: ExtensionContext): Promise<void> {
     const n3Execute: N3Execute = {
         reasoner: reasoner,
         n3: n3File,
-        // out: "out.n3"
+        debug: debug
     };
 
-    await executeN3ExecuteCommand(n3Execute, context);
+    await executeN3Command(n3Execute, context);
 }
