@@ -122,7 +122,7 @@
 					"default": "",
 					"description": "Provide additional command line arguments to eye."
 				},
-				"n3Execute.postProcessEyeDebug": {
+				"n3Execute.postProcessEyeTraces": {
 					"order": 6,
 					"type": "boolean",
 					"default": true,

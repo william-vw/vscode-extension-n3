@@ -127,7 +127,7 @@ class TraceInsert {
 				// if needed, add an ending "." for prior line
 				if (!line.trim().endsWith(".")) {
 					// (let's not add illegal syntax)
-					if (!line.trim().endsWith("{"))
+					if (!line.substring(0, pos.character).trim().endsWith("{"))
 						priorEndChar = (line.endsWith(" ") ? "" : " ") + ".";
 				}
 			}
