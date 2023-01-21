@@ -123,8 +123,10 @@ class TraceInsert {
 			if (!(wsRange !== undefined && wsRange.end.character >= pos.character)) {
 				priorNewline = true;
 
-				let line = editor.document.lineAt(pos.line).text
+				let line = editor.document.lineAt(pos.line).text;
+				// if needed, add an ending "." for prior line
 				if (!line.trim().endsWith(".")) {
+					// (let's not add illegal syntax)
 					if (!line.trim().endsWith("{"))
 						priorEndChar = (line.endsWith(" ") ? "" : " ") + ".";
 				}
@@ -133,7 +135,7 @@ class TraceInsert {
 
 		let nextChar = editor.document.getText(
 			new Range(new Position(pos.line, pos.character + 1), pos));
-		// if any next character, insert newline to put it at next line
+		// if any next character, insert newline to put it on next line
 		if (nextChar != "") {
 			nextNewline = true;
 		}
