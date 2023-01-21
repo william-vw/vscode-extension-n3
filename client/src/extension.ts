@@ -4,7 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 
 import * as path from 'path';
-import { commands, ExtensionContext, languages, window, workspace } from 'vscode';
+import { commands, ExtensionContext, languages, Position, Range, Selection, TextEditor, TextEditorEdit, window, workspace } from 'vscode';
 
 import {
 	LanguageClient,
@@ -92,6 +92,77 @@ export function activate(context: ExtensionContext) {
 	context.subscriptions.push(commands.registerCommand("n3.debug", async () => {
 		await runN3Debug(context);
 	}));
+
+	let traceInsert = new TraceInsert();
+	context.subscriptions.push(commands.registerTextEditorCommand("n3.addTrace",
+		async (editor: TextEditor, edit: TextEditorEdit) =>
+			editor.selections.forEach((selection, i) => traceInsert.insert(editor, edit, selection))
+	));
+}
+
+class TraceInsert {
+
+	prefix = "T";
+	cnt = 0;
+
+	insert(editor: TextEditor, edit: TextEditorEdit, selection: Selection): void {
+		let text = `"${(this.prefix + this.cnt++)}" log:trace () .`;
+		let pos = selection.active;
+
+		let priorNewline = false;
+		let priorEndChar = "";
+		let nextNewline = false;
+		let indent = "";
+
+		// not at start of line, so may need newline for this trace
+		if (pos.character > 0) {
+			let wsRange = editor.document.getWordRangeAtPosition(
+				new Position(pos.line, 0), /\s+/);
+
+			// if all prior characters are whitespaces, don't need newline
+			if (!(wsRange !== undefined && wsRange.end.character >= pos.character)) {
+				priorNewline = true;
+
+				let line = editor.document.lineAt(pos.line).text
+				if (!line.trim().endsWith(".")) {
+					if (!line.trim().endsWith("{"))
+						priorEndChar = (line.endsWith(" ") ? "" : " ") + ".";
+				}
+			}
+		}
+
+		let nextChar = editor.document.getText(
+			new Range(new Position(pos.line, pos.character + 1), pos));
+		// if any next character, insert newline to put it at next line
+		if (nextChar != "") {
+			nextNewline = true;
+		}
+
+		// - if any newline, then figure out indentation from current line
+
+		if ((priorNewline || nextNewline) && pos.line > 0) {
+			// get range of whitespaces at current line
+			let range = editor.document.getWordRangeAtPosition(
+				new Position(pos.line, 0), /\s+/);
+
+			if (range !== undefined) {
+				// let's not add an indent if it does not line up with the current cursor
+				if (!nextNewline || range.end.character == pos.character) {
+					let numSpaces = range.end.character - range.start.character;
+					indent = new Array(numSpaces + 1).join(" ");
+				}
+			}
+		}
+
+		text =
+			(priorNewline ? priorEndChar + "\n" + indent
+				: "") +
+			text +
+			(nextNewline ? "\n" + indent : "");
+
+		edit.insert(pos, text);
+		// n3OutputChannel.debug("select", selection.active);
+	}
 }
 
 export function deactivate(): Thenable<void> | undefined {

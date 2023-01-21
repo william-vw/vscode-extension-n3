@@ -68,8 +68,22 @@
 				"command": "n3.debug",
 				"title": "Debug N3 Code",
 				"category": "N3"
+			},
+			{
+				"command": "n3.addTrace",
+				"title": "Add Trace",
+				"category": "N3"
 			}
 		],
+		"menus": {
+			"editor/context": [
+				{
+					"when": "resourceLangId == n3",
+					"command": "n3.addTrace",
+					"group": "YourGroup@1"
+				}
+			]
+		},
 		"configuration": {
 			"type": "object",
 			"title": "Notation3",
