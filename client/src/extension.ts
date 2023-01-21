@@ -106,7 +106,7 @@ class TraceInsert {
 	cnt = 0;
 
 	insert(editor: TextEditor, edit: TextEditorEdit, selection: Selection): void {
-		let text = `"${(this.prefix + this.cnt++)}" log:trace () .`;
+		let text = `"${(this.prefix + this.cnt++)}" log:trace (  ) .`;
 		let pos = selection.active;
 
 		let priorNewline = false;

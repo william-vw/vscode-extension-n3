@@ -60,7 +60,7 @@ export class Runner {
             if (execute.debug) {
                 let trace = Buffer.concat(this._errors).toString()
 
-                if (config.get("postProcessEyeDebug")) {
+                if (config.get("postProcessEyeTraces")) {
                     let traces = trace.split("\n");
 
                     let map = {};
