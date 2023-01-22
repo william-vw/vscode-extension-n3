@@ -16346,7 +16346,7 @@ class n3PrefixListener extends n3Listener {
 	}
 
 	processPrefix(pNameNs, iriRef) {
-		if (pNameNs == null)
+		if (pNameNs == null || iriRef == null)
 			return
 
 		var prefix = pNameNs.getText().trim();
