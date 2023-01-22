@@ -67,27 +67,31 @@ export class Runner {
                     traces.forEach(e => {
                         if (e) {
                             let matches = /(.+) TRACE (.+)/.exec(e);
-                            let key = matches[1];
-                            let value = matches[2];
-                            if (map[key]) map[key].push(value); else map[key] = [ value ];
+                            if (matches) {
+                                let key = matches[1];
+                                let value = matches[2];
+                                if (map[key]) map[key].push(value); else map[key] = [value];
+                            }
                         }
                     });
-
+                    
                     n3OutputChannel.appendLine("TRACES:");
                     for (let key in map) {
-                        let unique = [ ... new Set(map[key]) ]
+                        let unique = [... new Set(map[key])]
 
                         n3OutputChannel.appendLine(key + ":");
                         unique.forEach(e => n3OutputChannel.appendLine(e));
                         n3OutputChannel.appendLine("");
                     }
-                
-                } else 
+
+                } else
                     n3OutputChannel.appendLine(trace);
             }
 
-            if (execute.debug && config.get("postProcessEyeDebug"))
+            if (execute.debug && config.get("postProcessEyeTraces")) {
+                n3OutputChannel.appendLine("");
                 n3OutputChannel.appendLine("INFERENCES:");
+            }
 
             if (reasoner == "eye" && config.get("prettyPrintEyeOutput"))
                 this.prettyPrintOutput(output, context);
