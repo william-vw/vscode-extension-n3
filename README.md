@@ -39,7 +39,7 @@ By default, the extension will group traces per subject (here, `R1`) and remove 
 You can also insert a trace statement using the right-click context menu (`Add Trace`) or the Command Palette (`N3: Add Trace`). This will insert the following at your cursor:
 
 ```
-"T[x] log:trace () ."
+"T[x] log:trace (  ) ."
 ```
 
 You can then fill in the variables to be traced in the object list.

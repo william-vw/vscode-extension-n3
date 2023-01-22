@@ -75,7 +75,7 @@ export class Runner {
                         }
                     });
                     
-                    n3OutputChannel.appendLine("TRACES:");
+                    n3OutputChannel.appendLine("TRACES (see README for help):");
                     for (let key in map) {
                         let unique = [... new Set(map[key])]
 
