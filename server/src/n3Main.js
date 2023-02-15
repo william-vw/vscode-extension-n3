@@ -16386,6 +16386,8 @@ class n3PrefixListener extends n3Listener {
 
 	iri(node) {
 		var s = this.text(node);
+        if (s == null)
+            return null;
 		return s.substring(1, s.length - 1);
 	}
 }
