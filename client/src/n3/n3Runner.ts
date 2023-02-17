@@ -58,8 +58,19 @@ export class Runner {
             let output = Buffer.concat(this._output).toString();
 
             if (execute.debug) {
-                let trace = Buffer.concat(this._errors).toString()
+                n3OutputChannel.appendLine("INFERENCES:");
+            }
 
+            if (reasoner == "eye" && config.get("prettyPrintEyeOutput"))
+                this.prettyPrintOutput(output, context);
+            else
+                n3OutputChannel.append(output);
+
+            if (execute.debug) {
+                n3OutputChannel.appendLine("");
+                n3OutputChannel.appendLine("TRACES (see README for help):");
+
+                let trace = Buffer.concat(this._errors).toString();
                 if (config.get("postProcessEyeTraces")) {
                     let traces = trace.split("\n");
 
@@ -75,7 +86,6 @@ export class Runner {
                         }
                     });
                     
-                    n3OutputChannel.appendLine("TRACES (see README for help):");
                     for (let key in map) {
                         let unique = [... new Set(map[key])]
 
@@ -87,16 +97,6 @@ export class Runner {
                 } else
                     n3OutputChannel.appendLine(trace);
             }
-
-            if (execute.debug && config.get("postProcessEyeTraces")) {
-                n3OutputChannel.appendLine("");
-                n3OutputChannel.appendLine("INFERENCES:");
-            }
-
-            if (reasoner == "eye" && config.get("prettyPrintEyeOutput"))
-                this.prettyPrintOutput(output, context);
-            else
-                n3OutputChannel.append(output);
         });
     }
 
