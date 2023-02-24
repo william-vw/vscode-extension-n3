@@ -4,7 +4,7 @@
 	"description": "Language and in-editor reasoning features for N3 code.",
 	"author": "w3c.n3",
 	"license": "Apache 2.0",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"icon": "logo.png",
 	"repository": {
 		"type": "git",

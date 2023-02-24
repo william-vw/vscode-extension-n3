@@ -37,7 +37,7 @@ function eyeCommandArgs(execute: N3Execute, config: WorkspaceConfiguration): str
     
     let args = [
         "--nope",
-        `--n3 "${execute.n3}"`,
+        `--n3 ${fileArgs(execute.n3)}`,
         passCmd,
         "--quiet"
     ];
@@ -57,7 +57,11 @@ function jen3CommandArgs(execute: N3Execute, config: WorkspaceConfiguration): st
     return [ 
         "-jar", 
         jarPath, 
-        `-n3 "${execute.n3}"`,
+        `-n3 ${fileArgs(execute.n3)}`,
         flag 
     ];
+}
+
+function fileArgs(files: string[]): string {
+    return "\"" + files.join("\" \"") + "\"";
 }

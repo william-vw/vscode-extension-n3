@@ -7,6 +7,7 @@ The language features are based on the latest [N3 grammar](https://w3c.github.io
 
 To use a code theme, open an `.n3` file and select the Notation3 Light or Notation3 Dark theme (Command Palette - search "color theme").
 
+
 ## Execution
 
 You can execute your N3 code using [eye](https://github.com/eyereasoner/eye) or [jen3](https://github.com/william-vw/jen3). (Command Palette - `N3: Execute N3 Code`)
@@ -43,6 +44,20 @@ You can also insert a trace statement using the right-click context menu (`Add T
 ```
 
 You can then fill in the variables to be traced in the object list.
+
+
+## Loading multiple files
+To execute multiple files, in addition to the editor file, add the following "directive" at the top of the editor file:
+
+```
+# @alsoload /Users/SomeUser/Documents/file1.n3 file2.n3 subfolder/file3.n3
+```
+(it is not part of the N3 grammar, so put the comment `#` symbol at the start)
+
+If the file path is not absolute (e.g., `file2.n3`, `subfolder/file3.n3`), then the parent folder of the editor file will be used to resolve the path.
+
+To find out the absolute paths of all executed files, check the `# loaded multiple files` comment at the top of the output.
+
 
 ## Issues
 

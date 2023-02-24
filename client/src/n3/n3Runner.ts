@@ -57,6 +57,10 @@ export class Runner {
 
             let output = Buffer.concat(this._output).toString();
 
+            if (execute.n3.length > 0) {
+                output = `# loaded multiple files: ${execute.n3.join(" ")}\n\n${output}`;
+            }
+
             if (execute.debug) {
                 n3OutputChannel.appendLine("INFERENCES:");
             }

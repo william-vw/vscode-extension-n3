@@ -1,4 +1,4 @@
-import { ExtensionContext, window, workspace } from "vscode";
+import { ExtensionContext, TextDocument, window, workspace } from "vscode";
 import { executeN3Command } from "./commandHandler";
 import { n3OutputChannel } from "./n3OutputChannel";
 
@@ -7,13 +7,13 @@ const exec = util.promisify(require('child_process').exec);
 
 export default interface N3Execute {
     reasoner: string
-    n3: string
+    n3: string[]
     debug: boolean
     // out: string
 }
 
 export async function runN3Execute(context: ExtensionContext): Promise<void> {
-    // n3OutputChannel.show();
+    n3OutputChannel.show();
 
     let config = workspace.getConfiguration("n3Execute");
     let reasoner = config.get<string>("reasoner");
@@ -114,11 +114,53 @@ async function runN3(reasoner: string, debug: boolean, context: ExtensionContext
         return;
     }
 
+    let folder = n3File.substring(0, n3File.lastIndexOf("/"));
+    let alsoloads = getAlsoLoads(editor.document, folder);
+    
+    // n3OutputChannel.append("alsoloads " + JSON.stringify(alsoloads, null, 4) + "\n");
+
     const n3Execute: N3Execute = {
         reasoner: reasoner,
-        n3: n3File,
+        n3: [n3File, ...alsoloads],
         debug: debug
     };
 
     await executeN3Command(n3Execute, context);
+}
+
+function getAlsoLoads(document: TextDocument, folder): string[] {
+    let prefix = /^\s*#\s*@alsoload\s+((.*?)(\s+(.*?))*)$/;
+    
+    let alsoloads: string[] = [];
+    for (let i = 0; ; i++) {
+        let line = document.lineAt(i).text;
+        if (line.trim().length == 0)
+            continue;
+
+        let match = line.match(prefix);
+        // n3OutputChannel.append("match " + JSON.stringify(match, null, 4) + "\n");
+        if (match) {
+
+            let files: string[] = match[1].split(/\s/)
+                .map(file => {
+                    file = file.trim();
+                    if (!file)
+                        return file;
+                    if (!file.startsWith("/")) {
+                        file = folder + "/" + file;
+                    }
+                    return file;
+
+                })
+                // drop the empty strings
+                .filter(f => f);
+
+            // n3OutputChannel.append("files " + JSON.stringify(files, null, 4) + "\n");
+            alsoloads.push(...files);
+        
+        } else
+            break;
+    }
+
+    return alsoloads;
 }
