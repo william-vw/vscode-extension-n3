@@ -169,7 +169,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
 	const diagnostics: Diagnostic[] = [];
 
-	connection.console.log("n3?\n" + JSON.stringify(n3, null, 4));
+	// connection.console.log("n3?\n" + JSON.stringify(n3, null, 4));
 	n3.parse(text,
 		{
 			syntaxError: function (recognizer: any, offendingSymbol: any,

@@ -35,7 +35,7 @@
     },
     "qname": {
       "name": "constant.other.qname.n3",
-      "match": "(\\w*:)(\\w*)",
+      "match": "([\\w-]*:)([\\w-]*)",
       "captures": {
         "1": {
           "name": "storage.type.PNAME_NS.n3"
@@ -47,7 +47,7 @@
     },
     "quickVar": {
       "name": "variable.parameter.quickVar.n3",
-      "match": "\\?(\\w*)",
+      "match": "\\?([\\w-]*)",
       "captures": {
         "1": {
           "name": "variable.parameter.PN_LOCAL.n3"
