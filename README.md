@@ -47,7 +47,7 @@ You can then fill in the variables to be traced in the object list.
 
 
 ## Loading multiple files
-To execute multiple files, in addition to the editor file, add the following "directive" at the top of the editor file:
+To execute multiple files, in addition to the current editor file, add the following "directive" at the top of the editor file (i.e., the n3 file you wish to execute):
 
 ```
 # @alsoload /Users/SomeUser/Documents/file1.n3 file2.n3 subfolder/file3.n3
