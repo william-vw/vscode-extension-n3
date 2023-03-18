@@ -157,10 +157,13 @@ documents.onDidChangeContent(change => {
 
 const MSG_UNKNOWN_PREFIX = "Unknown prefix: ";
 
+var curTextDocument: TextDocument;
+
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// In this simple example we get the settings for every validate run.
 	// const settings = await getDocumentSettings(textDocument.uri);
 
+	curTextDocument = textDocument;
 	const text = textDocument.getText();
 
 	// TODO take into account maxProblems
@@ -216,7 +219,8 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 						end: endPos
 					},
 					message: msg,
-					source: 'n3'
+					source: 'n3',
+					data: textDocument
 				};
 				diagnostics.push(diagnostic);
 			},
@@ -241,13 +245,18 @@ connection.onCodeAction((params) => {
 	// connection.console.log("diagns? " + JSON.stringify(diagnostics, null, 4));
 	let codeActions: CodeAction[] = [];
 	for (let diagnostic of diagnostics) {
+		
 		if (diagnostic.message.startsWith(MSG_UNKNOWN_PREFIX)) {
 			let prefix: string = diagnostic.message.substring(MSG_UNKNOWN_PREFIX.length);
 
 			if (namespaces.has(prefix)) {
 				let ns = namespaces.get(prefix);
-				let directive = `@prefix ${prefix}: <${ns}> . \n`;
+				let directive = `@prefix ${prefix}: <${ns}> .\n`;
 
+				// keep any commented lines at the top
+				// (could be annotations such as @alsoload)
+
+				let lineNr = skipComments(curTextDocument.getText());
 				const codeAction: CodeAction = {
 					title: `Import ${prefix} namespace`,
 					kind: CodeActionKind.QuickFix,
@@ -255,7 +264,7 @@ connection.onCodeAction((params) => {
 					edit: {
 						changes: {
 							[params.textDocument.uri]: [{
-								range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
+								range: { start: { line: lineNr, character: 0 }, end: { line: lineNr, character: 0 } },
 								newText: directive
 							}]
 						}
@@ -268,6 +277,29 @@ connection.onCodeAction((params) => {
 	// connection.console.log("codeActions? " + JSON.stringify(codeActions, null, 4));
 	return codeActions;
 });
+
+function skipComments(text:string): number {
+	let lineCnt = -1, startIdx: number, endIdx = -1, curLine: string;
+	do {
+		startIdx = endIdx + 1;
+		endIdx = text.indexOf("\n", startIdx);
+		curLine = text.substring(startIdx, endIdx).trim();
+
+		lineCnt++;
+
+	} while (curLine.startsWith("#"));
+
+	// skip newlines that come after as well
+	while (curLine.trim() == "") {
+		startIdx = endIdx + 1;
+		endIdx = text.indexOf("\n", startIdx);
+		curLine = text.substring(startIdx, endIdx).trim();
+
+		lineCnt++;
+	}
+
+	return lineCnt;
+}
 
 // connection.onDocumentFormatting(formatDocument);
 
@@ -348,10 +380,10 @@ connection.onCodeAction((params) => {
 // 	// });
 // }
 
-connection.onDidChangeWatchedFiles(_change => {
-	// Monitored files have change in VSCode
-	connection.console.log('We received an file change event');
-});
+// connection.onDidChangeWatchedFiles(_change => {
+// 	// Monitored files have change in VSCode
+// 	connection.console.log('We received an file change event');
+// });
 
 // // This handler provides the initial list of the completion items.
 // connection.onCompletion(
