@@ -4,7 +4,7 @@
 	"description": "Language and in-editor reasoning features for N3 code.",
 	"author": "w3c.n3",
 	"license": "Apache 2.0",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"icon": "logo.png",
 	"repository": {
 		"type": "git",
@@ -110,40 +110,40 @@
 					"default": true,
 					"description": "Only show inferences and not the full deductive closure"
 				},
-				"n3Execute.prettyPrintEyeOutput": {
-					"order": 4,
+				"n3LspServer.formatNamespaces": {
+					"order": 5,
 					"type": "boolean",
-					"default": false,
-					"description": "Pretty-print the eye output using python rdflib.\n*** Requires python3 to be installed on your system ***\n*** Does not support full n3 expressivity (e.g., lists as subjects) ***"
+					"default": true,
+					"description": "When formatting, also format prefix and base declarations by grouping them all at the top, using the '@' syntax, and sorting them alphabetically."
 				},
 				"n3Execute.extraEyeArguments": {
-					"order": 5,
+					"order": 6,
 					"type": "string",
 					"default": "",
 					"description": "Provide additional command line arguments to eye."
 				},
 				"n3Execute.postProcessEyeTraces": {
-					"order": 6,
+					"order": 7,
 					"type": "boolean",
 					"default": true,
 					"description": "Post-process eye debug tracing (group by subject and filter duplicates)."
 				},
 				"n3LspServer.namespacesFile": {
-					"order": 7,
+					"order": 8,
 					"scope": "resource",
 					"type": "string",
 					"default": "",
 					"description": "Path to a JSON file with a single object that maps prefixes to their namepace URIs.\n*** Restart extension to load new namespaces ***\n*** See https://github.com/william-vw/vscode-extension-n3/blob/main/namespaces.json for an example ***"
 				},
 				"n3LspServer.maxNumberOfProblems": {
-					"order": 8,
+					"order": 9,
 					"scope": "resource",
 					"type": "number",
 					"default": 100,
 					"description": "Controls the maximum number of problems produced by the server."
 				},
 				"n3LspServer.trace.server": {
-					"order": 8,
+					"order": 10,
 					"scope": "window",
 					"type": "string",
 					"enum": [

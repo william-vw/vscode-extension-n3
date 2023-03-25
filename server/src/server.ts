@@ -28,7 +28,7 @@ import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
 
-const n3 = require('./n3Main.js');
+const n3 = require('./n3Main_nodrop.js');
 
 // import * as should from 'should';
 import { spawnSync } from "child_process";
@@ -76,7 +76,7 @@ connection.onInitialize((params: InitializeParams) => {
 			// 	resolveProvider: true
 			// },
 			codeActionProvider: true,
-			// documentFormattingProvider: true
+			documentFormattingProvider: true
 		}
 	};
 	if (hasWorkspaceFolderCapability) {
@@ -101,27 +101,22 @@ connection.onInitialized(() => {
 	}
 });
 
-// The example settings
-interface ExampleSettings {
-	maxNumberOfProblems: number;
-}
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings: ExampleSettings = { maxNumberOfProblems: 1000 };
-let globalSettings: ExampleSettings = defaultSettings;
+let globalSettings: any;
 
 // Cache the settings of all open documents
-const documentSettings: Map<string, Thenable<ExampleSettings>> = new Map();
+const documentSettings: Map<string, Thenable<any>> = new Map();
 
 connection.onDidChangeConfiguration(change => {
 	if (hasConfigurationCapability) {
 		// Reset all cached document settings
 		documentSettings.clear();
 	} else {
-		globalSettings = <ExampleSettings>(
-			(change.settings.n3LspServer || defaultSettings)
+		globalSettings = <any>(
+			(change.settings.n3LspServer)
 		);
 	}
 
@@ -129,7 +124,7 @@ connection.onDidChangeConfiguration(change => {
 	documents.all().forEach(validateTextDocument);
 });
 
-function getDocumentSettings(resource: string): Thenable<ExampleSettings> {
+function getDocumentSettings(resource: string): Thenable<any> {
 	if (!hasConfigurationCapability) {
 		return Promise.resolve(globalSettings);
 	}
@@ -157,6 +152,7 @@ documents.onDidChangeContent(change => {
 
 const MSG_UNKNOWN_PREFIX = "Unknown prefix: ";
 
+// ... needed
 var curTextDocument: TextDocument;
 
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
@@ -245,7 +241,7 @@ connection.onCodeAction((params) => {
 	// connection.console.log("diagns? " + JSON.stringify(diagnostics, null, 4));
 	let codeActions: CodeAction[] = [];
 	for (let diagnostic of diagnostics) {
-		
+
 		if (diagnostic.message.startsWith(MSG_UNKNOWN_PREFIX)) {
 			let prefix: string = diagnostic.message.substring(MSG_UNKNOWN_PREFIX.length);
 
@@ -278,7 +274,7 @@ connection.onCodeAction((params) => {
 	return codeActions;
 });
 
-function skipComments(text:string): number {
+function skipComments(text: string): number {
 	let lineCnt = -1, startIdx: number, endIdx = -1, curLine: string;
 	do {
 		startIdx = endIdx + 1;
@@ -301,84 +297,37 @@ function skipComments(text:string): number {
 	return lineCnt;
 }
 
-// connection.onDocumentFormatting(formatDocument);
+connection.onDocumentFormatting(formatDocument);
 
-// async function formatDocument(params: DocumentFormattingParams): Promise<TextEdit[]> {
-// 	let doc = documents.get(params.textDocument.uri)!;
+async function formatDocument(params: DocumentFormattingParams): Promise<TextEdit[]> {
+	let doc = documents.get(params.textDocument.uri)!;
+	const settings = await getDocumentSettings(params.textDocument.uri);
 
-// 	let text: string = doc.getText();
-// 	let formatted: string | undefined = /* await */ formatCode(text);
+	let text: string = doc.getText();
+	let formatted: string | undefined = await formatCode(text, settings);
 
-// 	if (formatted) {
-// 		// connection.console.log("formatted? " + formatted);
-// 		let edit: TextEdit = {
-// 			range: { start: { line: 0, character: 0 }, end: { line: doc.lineCount, character: 0 } },
-// 			newText: formatted
-// 		};
+	if (formatted) {
+		// connection.console.log("formatted? " + formatted);
+		let edit: TextEdit = {
+			range: { start: { line: 0, character: 0 }, end: { line: doc.lineCount, character: 0 } },
+			newText: formatted
+		};
 
-// 		// connection.console.log("edit?\n" + JSON.stringify(edit, null, 4));
-// 		return [edit];
+		// connection.console.log("edit?\n" + JSON.stringify(edit, null, 4));
+		return [ edit ];
 
-// 	} else
-// 		return [];
-// }
+	} else
+		return [];
+}
 
-// function formatCode(text: string) {
-// 	const result = spawnSync('python3', 
-// 		['/Users/wvw/git/n3/vscode/n3-vscode/vscode-lsp-n3/server/src/format_results.py', text]);
-// 	//const result = spawnSync('python3', ['format_results.py', text]);
-
-// 	// it('should be able to execute a string of python code', function (done) {
-// 	// 	PythonShell.runString('print("hello");print("world")', undefined, function (err, results) {
-// 	// 		if (err) return done(err);
-// 	// 		results.should.be.an.Array().and.have.lengthOf(2);
-// 	// 		results.should.eql(['hello', 'world']);
-// 	// 		done();
-// 	// 	});
-// 	// });
-// 	// return "success";
-
-// 	// connection.console.log("stdout: " + result.stdout);
-// 	switch (result.status) {
-
-// 		case 0:
-// 			return result.stdout.toString();
-
-// 		default:
-// 			connection.console.error(result.stderr.toString());
-// 			return undefined;
-// 	}
-
-// 	// return new Promise((resolve, reject) => {
-// 	// this works
-// 	// resolve("abc");
-
-// 	// but not this
-// 	// let output: string, error: string;
-// 	// spawn('python3', ['/Users/wvw/git/n3/vscode/n3-vscode/vscode-lsp-n3/server/src/format_results.py', text]);
-// 	// python.stdout.on('data', function (data) {
-// 	// 	// connection.console.log("data? " + data);
-// 	// 	output = data;
-// 	// });
-// 	// python.stderr.on('data', function (data) {
-// 	// 	// connection.console.log("error? " + data);
-// 	// 	error = data;
-// 	// });
-// 	// python.on('close', (code) => {
-// 	// 	connection.console.log(`child process closed with code ${code}`);
-// 	// 	switch (code) {
-// 	// 		case 0:
-// 	// 			connection.console.log("resolving: " + output);
-// 	// 			resolve(output);
-// 	// 			break;
-
-// 	// 		default:
-// 	// 			reject(error)
-// 	// 			break;
-// 	// 	}
-// 	// });
-// 	// });
-// }
+async function formatCode(text: string, settings: any) {
+	let formatNs = settings["formatNamespaces"];
+	return n3.format(text,{
+			tab: 4,
+			graphOnNewline: true,
+			formatNamespaces: formatNs
+		});
+}
 
 // connection.onDidChangeWatchedFiles(_change => {
 // 	// Monitored files have change in VSCode
