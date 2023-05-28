@@ -186,8 +186,8 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 			syntaxError: function (recognizer: any, offendingSymbol: any,
 				line: any, column: any, msg: string, err: any) {
 
-				connection.console.log("syntaxError: " + offendingSymbol + " - " +
-					line + " - " + column + " - " + msg + " - " + err);
+				// connection.console.log("syntaxError: " + offendingSymbol + " - " +
+				// 	line + " - " + column + " - " + msg + " - " + err);
 
 				let start, end;
 				if (offendingSymbol != null) {
@@ -238,7 +238,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 			},
 
 			onTerm: function(type: string, term: any) {
-				connection.console.log(type + ": " + JSON.stringify(term));
+				// connection.console.log(type + ": " + JSON.stringify(term));
 				docTokens.add(uri, type, term);
 			}
 
@@ -353,7 +353,9 @@ async function formatCode(text: string, settings: any) {
 
 connection.onCompletion(
 	(params: TextDocumentPositionParams): CompletionItem[] => {
-		const doc = documents.get(params.textDocument.uri)!;
+		const uri = params.textDocument.uri;
+		
+		const doc = documents.get(uri)!;
 
 		const symbol = doc.getText(
 			{
@@ -363,11 +365,12 @@ connection.onCompletion(
 		);
 		// connection.console.log("symbol? " + symbol);
 
-		let type, needle;
+		let type, local = false, needle;
 		switch (symbol) {
 
 			case '?':
 				type = 'qvar';
+				local = true;
 				break;
 			case '<':
 				type = 'iri';
@@ -381,9 +384,10 @@ connection.onCompletion(
 				);
 				expanded = expanded.substring(expanded.lastIndexOf(" ") + 1);
 				// connection.console.log("expanded? " + expanded);
-				if (expanded == '_:')
+				if (expanded == '_:') {
 					type = 'bnode';
-				else {
+					local = true;
+				} else {
 					type = 'pname';
 					needle = expanded.substring(0, expanded.length - 1);
 				}
@@ -392,7 +396,12 @@ connection.onCompletion(
 				break;
 		}
 
-		const results: string[] = docTokens.get(type, needle);
+		let results: string[];
+		if (local)
+			results = docTokens.get(uri, type, needle);
+		else
+			results = docTokens.getAll(type, needle);
+
 		// connection.console.log("results?", results);
 
 		return results.map(str => CompletionItem.create(str));

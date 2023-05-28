@@ -16404,8 +16404,12 @@ class n3_nodropTermListener extends n3_nodropListener {
 	}
 
     exitIri(ctx) {
-        if (ctx.IRIREF())
-            this.listener.onTerm('iri', ctx.IRIREF());
+        if (ctx.IRIREF()) {
+            let iri = ctx.IRIREF() + "";
+            iri = iri.substring(1, iri.length - 1);
+            
+            this.listener.onTerm('iri', iri);
+        }
     }
 
     exitPrefixedName(ctx) {

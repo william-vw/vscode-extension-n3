@@ -14,7 +14,11 @@ export class TokenSets {
         this.docTokens[uri].add(type, term);
     }
 
-    get(type, needle) {
+    get(uri, type, needle) {
+        return Array.from(this.docTokens[uri].get(type, needle)).sort();
+    }
+
+    getAll(type, needle) {
         const ret = new Set();
         Object.values(this.docTokens).forEach(set => 
             set.get(type, needle).forEach(el => ret.add(el)));
