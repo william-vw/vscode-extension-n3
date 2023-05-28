@@ -354,6 +354,7 @@ async function formatCode(text: string, settings: any) {
 connection.onCompletion(
 	(params: TextDocumentPositionParams): CompletionItem[] => {
 		const uri = params.textDocument.uri;
+		// connection.console.log("uri? " + uri);
 		
 		const doc = documents.get(uri)!;
 
@@ -393,7 +394,7 @@ connection.onCompletion(
 				}
 				break;
 			default:
-				break;
+				return [];
 		}
 
 		let results: string[];
@@ -402,7 +403,7 @@ connection.onCompletion(
 		else
 			results = docTokens.getAll(type, needle);
 
-		// connection.console.log("results?", results);
+		// connection.console.log("results? " + results);
 
 		return results.map(str => CompletionItem.create(str));
 	}

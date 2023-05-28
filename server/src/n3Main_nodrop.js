@@ -17473,7 +17473,7 @@ function parse(input, listener) {
 		// will call listener with any prefix errors
 		n3Parser.addParseListener(new n3_nodropPrefixListener(listener));
 
-    // if (listener.onTerm)
+    if (listener.onTerm)
         n3Parser.addParseListener(new n3_nodropTermListener(listener));
 	
 	// if (listener.newAstLine)
