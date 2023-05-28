@@ -16395,7 +16395,46 @@ class n3_nodropPrefixListener extends n3_nodropListener {
 // var n3Visitor = require('./n3Visitor').n3Visitor
 // var n3Parser = require('./n3Parser').n3Parser
 
+class n3_nodropTermListener extends n3_nodropListener {
 
+	constructor(listener) {
+		super();
+
+		this.listener = listener;
+	}
+
+    exitIri(ctx) {
+        if (ctx.IRIREF())
+            this.listener.onTerm('iri', ctx.IRIREF());
+    }
+
+    exitPrefixedName(ctx) {
+        let pNameLn = ctx.PNAME_LN();
+		if (pNameLn != null) {
+            let pName = pNameLn.getText().trim();
+
+            let sep = pName.indexOf(":");
+			let prefix = pName.substring(0, sep).trim();
+			let lname = pName.substring(sep + 1).trim();
+
+            this.listener.onTerm('pname', [ prefix, lname ]);
+        }
+    }
+    
+    exitBlankNode(ctx) {
+        let label = ctx.BLANK_NODE_LABEL() + "";
+        label = label.substring(2);
+
+        this.listener.onTerm('bnode', label);
+    }
+
+    exitQuickVar(ctx) {
+        let name = ctx.QuickVarName() + "";
+        name = name.substring(1);
+
+        this.listener.onTerm('qvar', name);
+    }
+}
 
 class n3_nodropPrintVisitor extends n3_nodropVisitor {
 
@@ -17429,6 +17468,9 @@ function parse(input, listener) {
 	if (listener.unknownPrefix)
 		// will call listener with any prefix errors
 		n3Parser.addParseListener(new n3_nodropPrefixListener(listener));
+
+    // if (listener.onTerm)
+        n3Parser.addParseListener(new n3_nodropTermListener(listener));
 	
 	// if (listener.newAstLine)
 	// 	// will call listener with individual ast lines

@@ -1,7 +1,13 @@
 # Features
 
-Provides N3 syntax checking, code themes, namespace suggestions, and N3 code execution.
-The language features are based on the latest [N3 grammar](https://w3c.github.io/N3/spec/#grammar).
+Provides N3 syntax checking, code themes, formatting, and N3 code execution.
+
+
+## Syntax Checking
+N3 code syntax is checked as per the latest [N3 grammar](https://w3c.github.io/N3/spec/#grammar).
+
+Missing namespaces are suggested based on a [default file](https://github.com/william-vw/vscode-extension-n3/blob/main/namespaces.json) that is currently quite limited. You can extend this file and point to its path in the extension settings.
+
 
 ## Code Theme
 
@@ -14,7 +20,14 @@ You can execute your N3 code using [eye](https://github.com/eyereasoner/eye) or 
 - Eye can be found [here](https://github.com/eyereasoner/eye/releases) - follow the installation instructions.
 - Jen3 can be found [here](https://github.com/william-vw/jen3/releases) - download the latest release and point to its path in the extension settings.  
 
-Namespaces are suggested based on a [default file](https://github.com/william-vw/vscode-extension-n3/blob/main/namespaces.json) that is currently quite limited. You can extend this file and point to its path in the extension settings.
+
+## Formatting
+
+You can format N3 code using the regular VSCode shortcut (default: Alt-Shift-F on Windows, Option-Shift-F on Mac, Ctrl-Shift-i on Linux). 
+
+By default, prefix and base declarations are formatted as well: 
+meaning they are grouped at the top, written using the '@' syntax, and sorted alphabetically.
+This option can be turned off in the extension settings.
 
 
 ## Debugging

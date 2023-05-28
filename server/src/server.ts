@@ -1,3 +1,4 @@
+/* eslint-disable no-case-declarations */
 /* --------------------------------------------------------------------------------------------
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
@@ -5,6 +6,7 @@
 import {
 	createConnection,
 	TextDocuments,
+	Range,
 	Diagnostic,
 	DiagnosticSeverity,
 	ProposedFeatures,
@@ -29,6 +31,8 @@ import {
 } from 'vscode-languageserver-textdocument';
 
 const n3 = require('./n3Main_nodrop.js');
+
+import { TokenSet } from './TokenSet.js';
 
 // import * as should from 'should';
 import { spawnSync } from "child_process";
@@ -76,7 +80,10 @@ connection.onInitialize((params: InitializeParams) => {
 			// 	resolveProvider: true
 			// },
 			codeActionProvider: true,
-			documentFormattingProvider: true
+			documentFormattingProvider: true,
+			completionProvider: {
+				triggerCharacters: ['<', '?', ':']
+			  }
 		}
 	};
 	if (hasWorkspaceFolderCapability) {
@@ -155,6 +162,8 @@ const MSG_UNKNOWN_PREFIX = "Unknown prefix: ";
 // ... needed
 var curTextDocument: TextDocument;
 
+let curTokens = new TokenSet();
+
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// In this simple example we get the settings for every validate run.
 	// const settings = await getDocumentSettings(textDocument.uri);
@@ -167,6 +176,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// let problems = 0;
 
 	const diagnostics: Diagnostic[] = [];
+	curTokens = new TokenSet();
 
 	// connection.console.log("n3?\n" + JSON.stringify(n3, null, 4));
 	n3.parse(text,
@@ -174,17 +184,17 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 			syntaxError: function (recognizer: any, offendingSymbol: any,
 				line: any, column: any, msg: string, err: any) {
 
-				// connection.console.log("syntaxError: " + offendingSymbol + " - " +
-				// 	line + " - " + column + " - " + msg + " - " + err);
+				connection.console.log("syntaxError: " + offendingSymbol + " - " +
+					line + " - " + column + " - " + msg + " - " + err);
 
-				var start, end;
+				let start, end;
 				if (offendingSymbol != null) {
 					// see Token class in n3Main.js
 					start = textDocument.positionAt(offendingSymbol.start);
 					end = textDocument.positionAt(offendingSymbol.stop);
 				} else {
-					start = { line: line, character: column }
-					end = start
+					start = { line: line, character: column };
+					end = start;
 				}
 
 				const diagnostic: Diagnostic = {
@@ -204,10 +214,10 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 				// connection.console.log("unknownPrefix: " + prefix + " - " + pName + " - " + line + " - " + start + " - " + end);
 
 				line = line - 1; // ??
-				let startPos = { line: line, character: start }
-				let endPos = { line: line, character: start + prefix.length }
+				const startPos = { line: line, character: start };
+				const endPos = { line: line, character: start + prefix.length };
 
-				let msg = MSG_UNKNOWN_PREFIX + prefix;
+				const msg = MSG_UNKNOWN_PREFIX + prefix;
 				const diagnostic: Diagnostic = {
 					severity: DiagnosticSeverity.Error,
 					range: {
@@ -223,6 +233,11 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
 			consoleError: function (type: string, line: string, start: string, end: string, msg: string) {
 				connection.console.log("consoleError" + type + " - " + line + " - " + start + " - " + end + " - " + msg);
+			},
+
+			onTerm: function(type: string, term: any) {
+				connection.console.log(type + ": " + JSON.stringify(term));
+				curTokens.add(type, term);
 			}
 
 			// newAstLine: function(line:string) {
@@ -236,23 +251,23 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
 connection.onCodeAction((params) => {
 	// connection.console.log("params? " + JSON.stringify(params, null, 4));
-	let diagnostics = params.context.diagnostics;
+	const diagnostics = params.context.diagnostics;
 
 	// connection.console.log("diagns? " + JSON.stringify(diagnostics, null, 4));
-	let codeActions: CodeAction[] = [];
-	for (let diagnostic of diagnostics) {
+	const codeActions: CodeAction[] = [];
+	for (const diagnostic of diagnostics) {
 
 		if (diagnostic.message.startsWith(MSG_UNKNOWN_PREFIX)) {
-			let prefix: string = diagnostic.message.substring(MSG_UNKNOWN_PREFIX.length);
+			const prefix: string = diagnostic.message.substring(MSG_UNKNOWN_PREFIX.length);
 
 			if (namespaces.has(prefix)) {
-				let ns = namespaces.get(prefix);
-				let directive = `@prefix ${prefix}: <${ns}> .\n`;
+				const ns = namespaces.get(prefix);
+				const directive = `@prefix ${prefix}: <${ns}> .\n`;
 
 				// keep any commented lines at the top
 				// (could be annotations such as @alsoload)
 
-				let lineNr = skipComments(curTextDocument.getText());
+				const lineNr = skipComments(curTextDocument.getText());
 				const codeAction: CodeAction = {
 					title: `Import ${prefix} namespace`,
 					kind: CodeActionKind.QuickFix,
@@ -300,15 +315,15 @@ function skipComments(text: string): number {
 connection.onDocumentFormatting(formatDocument);
 
 async function formatDocument(params: DocumentFormattingParams): Promise<TextEdit[]> {
-	let doc = documents.get(params.textDocument.uri)!;
+	const doc = documents.get(params.textDocument.uri)!;
 	const settings = await getDocumentSettings(params.textDocument.uri);
 
-	let text: string = doc.getText();
-	let formatted: string | undefined = await formatCode(text, settings);
+	const text: string = doc.getText();
+	const formatted: string | undefined = await formatCode(text, settings);
 
 	if (formatted) {
 		// connection.console.log("formatted? " + formatted);
-		let edit: TextEdit = {
+		const edit: TextEdit = {
 			range: { start: { line: 0, character: 0 }, end: { line: doc.lineCount, character: 0 } },
 			newText: formatted
 		};
@@ -334,26 +349,52 @@ async function formatCode(text: string, settings: any) {
 // 	connection.console.log('We received an file change event');
 // });
 
-// // This handler provides the initial list of the completion items.
-// connection.onCompletion(
-// 	(_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
-// 		// The pass parameter contains the position of the text document in
-// 		// which code complete got requested. For the example we ignore this
-// 		// info and always provide the same completion items.
-// 		return [
-// 			{
-// 				label: 'TypeScript',
-// 				kind: CompletionItemKind.Text,
-// 				data: 1
-// 			},
-// 			{
-// 				label: 'JavaScript',
-// 				kind: CompletionItemKind.Text,
-// 				data: 2
-// 			}
-// 		];
-// 	}
-// );
+// This handler provides the initial list of the completion items.
+connection.onCompletion(
+	(params: TextDocumentPositionParams): CompletionItem[] => {
+		const doc = documents.get(params.textDocument.uri)!;
+
+		const symbol = doc.getText(
+			{
+				start: params.position,
+				end: { line: params.position.line, character: params.position.character - 1 }
+			}
+		);
+		// connection.console.log("symbol? " + symbol);
+
+		let results: string[] = [];
+		switch (symbol) {
+
+			case '?':
+				results = curTokens.get('qvar');
+				break;
+			case '<':
+				results = curTokens.get('iri');
+				break;
+			case ':':
+				let expanded = doc.getText(
+					{
+						start: { line: params.position.line, character: 0 },
+						end: params.position
+					}
+				);
+				expanded = expanded.substring(expanded.lastIndexOf(" ") + 1);
+				// connection.console.log("expanded? " + expanded);
+				if (expanded == '_:')
+					results = curTokens.get('bnode');
+				else {
+					const prefix = expanded.substring(0, expanded.length - 1);
+					results = curTokens.getLNames(prefix);
+				}
+				break;
+			default:
+				break;
+		}
+		// connection.console.log("results?", results);
+
+		return results.map(str => CompletionItem.create(str));
+	}
+);
 
 // // This handler resolves additional information for the item selected in
 // // the completion list.
