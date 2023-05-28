@@ -5,10 +5,10 @@ export class TokenSet {
 
     constructor() {
         this.types = {
-            'iri': [],
+            'iri': new Set(),
             'pname': {},
-            'bnode': [],
-            'qvar': []
+            'bnode': new Set(),
+            'qvar': new Set()
         };
     }
 
@@ -28,7 +28,7 @@ export class TokenSet {
                 break;
         }
 
-        tokens.push(term);
+        tokens.add(term);
     }
 
     // get(type, str) {
@@ -39,14 +39,27 @@ export class TokenSet {
     //     return [];
     // }
 
-    get(type) {
-        return this.types[type];
+    get(type, needle) {
+        let ret = null;
+        switch (type) {
+
+        case 'pname':
+            ret = this.getLNames(needle);
+            break;
+        
+        default:
+            ret = this.types[type];
+            break;
+        }
+
+        // return Array.from(ret);
+        return ret;
     }
 
     getLNames(prefix) {
         let lnames = this.types['pname'][prefix];
         if (!lnames) {
-            lnames = [];
+            lnames = new Set();
             this.types['pname'][prefix] = lnames;
         }
 

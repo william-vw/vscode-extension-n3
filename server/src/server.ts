@@ -32,7 +32,7 @@ import {
 
 const n3 = require('./n3Main_nodrop.js');
 
-import { TokenSet } from './TokenSet.js';
+import { TokenSets } from './TokenSets.js';
 
 // import * as should from 'should';
 import { spawnSync } from "child_process";
@@ -160,13 +160,15 @@ documents.onDidChangeContent(change => {
 const MSG_UNKNOWN_PREFIX = "Unknown prefix: ";
 
 // ... needed
-var curTextDocument: TextDocument;
+let curTextDocument: TextDocument;
 
-let curTokens = new TokenSet();
+const docTokens = new TokenSets();
 
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// In this simple example we get the settings for every validate run.
 	// const settings = await getDocumentSettings(textDocument.uri);
+
+	const uri = textDocument.uri;
 
 	curTextDocument = textDocument;
 	const text = textDocument.getText();
@@ -176,7 +178,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// let problems = 0;
 
 	const diagnostics: Diagnostic[] = [];
-	curTokens = new TokenSet();
+	docTokens.reset(uri);
 
 	// connection.console.log("n3?\n" + JSON.stringify(n3, null, 4));
 	n3.parse(text,
@@ -237,7 +239,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
 			onTerm: function(type: string, term: any) {
 				connection.console.log(type + ": " + JSON.stringify(term));
-				curTokens.add(type, term);
+				docTokens.add(uri, type, term);
 			}
 
 			// newAstLine: function(line:string) {
@@ -349,7 +351,6 @@ async function formatCode(text: string, settings: any) {
 // 	connection.console.log('We received an file change event');
 // });
 
-// This handler provides the initial list of the completion items.
 connection.onCompletion(
 	(params: TextDocumentPositionParams): CompletionItem[] => {
 		const doc = documents.get(params.textDocument.uri)!;
@@ -362,14 +363,14 @@ connection.onCompletion(
 		);
 		// connection.console.log("symbol? " + symbol);
 
-		let results: string[] = [];
+		let type, needle;
 		switch (symbol) {
 
 			case '?':
-				results = curTokens.get('qvar');
+				type = 'qvar';
 				break;
 			case '<':
-				results = curTokens.get('iri');
+				type = 'iri';
 				break;
 			case ':':
 				let expanded = doc.getText(
@@ -381,15 +382,17 @@ connection.onCompletion(
 				expanded = expanded.substring(expanded.lastIndexOf(" ") + 1);
 				// connection.console.log("expanded? " + expanded);
 				if (expanded == '_:')
-					results = curTokens.get('bnode');
+					type = 'bnode';
 				else {
-					const prefix = expanded.substring(0, expanded.length - 1);
-					results = curTokens.getLNames(prefix);
+					type = 'pname';
+					needle = expanded.substring(0, expanded.length - 1);
 				}
 				break;
 			default:
 				break;
 		}
+
+		const results: string[] = docTokens.get(type, needle);
 		// connection.console.log("results?", results);
 
 		return results.map(str => CompletionItem.create(str));
