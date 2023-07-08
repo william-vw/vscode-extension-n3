@@ -54,7 +54,7 @@ export function activate(context: ExtensionContext) {
 	try {
 		initOptions.nsMap = require(nsMapPath);
 	} catch (e) {
-		window.showErrorMessage(`error loading namespaces file ${configNsPath}`);
+		window.showErrorMessage(`error loading namespaces file ${configNsPath}: ${e}`);
 	}
 
 	// auto-complete
@@ -68,15 +68,23 @@ export function activate(context: ExtensionContext) {
 		if (configAcWithVocabs) {
 			const configVocabPath = config.get<string>("vocabulariesFile");
 			const rootPath = (configVocabPath ? undefined : "data/vocab/");
-			const vocabMapPath = (configVocabPath ? configVocabPath : context.asAbsolutePath(`${rootPath}vocabularies.json`));
+			const vocabMapPath = (configVocabPath ? 
+				configVocabPath : 
+				context.asAbsolutePath(`${rootPath}vocabularies.json`)
+			);
 			
 			try {
 				const vocabMap = require(vocabMapPath);
-				for (const [key, value] of Object.entries(vocabMap))
-					vocabMap[key] = require(`${rootPath}${value}`);
+				for (const key in vocabMap) {
+					const value : string = vocabMap[key];
+					const path : string = (configVocabPath ? value : context.asAbsolutePath(rootPath + value));
+
+					vocabMap[key] = require(path);
+				}
+				initOptions.ac.vocabMap = vocabMap;
 
 			} catch (e) {
-				window.showErrorMessage(`error loading vocabulary terms file ${configNsPath}`)
+				window.showErrorMessage(`error loading vocabulary terms file ${configNsPath}: ${e}`);
 			}
 		}
 	}
@@ -115,7 +123,7 @@ export function activate(context: ExtensionContext) {
 		await runN3Debug(context);
 	}));
 
-	let traceInsert = new TraceInsert();
+	const traceInsert = new TraceInsert();
 	context.subscriptions.push(commands.registerTextEditorCommand("n3.addTrace",
 		async (editor: TextEditor, edit: TextEditorEdit) =>
 			editor.selections.forEach((selection, i) => traceInsert.insert(editor, edit, selection))
@@ -129,7 +137,7 @@ class TraceInsert {
 
 	insert(editor: TextEditor, edit: TextEditorEdit, selection: Selection): void {
 		let text = `"${(this.prefix + this.cnt++)}" log:trace (  ) .`;
-		let pos = selection.active;
+		const pos = selection.active;
 
 		let priorNewline = false;
 		let priorEndChar = "";
@@ -138,14 +146,14 @@ class TraceInsert {
 
 		// not at start of line, so may need newline for this trace
 		if (pos.character > 0) {
-			let wsRange = editor.document.getWordRangeAtPosition(
+			const wsRange = editor.document.getWordRangeAtPosition(
 				new Position(pos.line, 0), /\s+/);
 
 			// if all prior characters are whitespaces, don't need newline
 			if (!(wsRange !== undefined && wsRange.end.character >= pos.character)) {
 				priorNewline = true;
 
-				let line = editor.document.lineAt(pos.line).text;
+				const line = editor.document.lineAt(pos.line).text;
 				// if needed, add an ending "." for prior line
 				if (!line.trim().endsWith(".")) {
 					// (let's not add illegal syntax)
@@ -155,7 +163,7 @@ class TraceInsert {
 			}
 		}
 
-		let nextChar = editor.document.getText(
+		const nextChar = editor.document.getText(
 			new Range(new Position(pos.line, pos.character + 1), pos));
 		// if any next character, insert newline to put it on next line
 		if (nextChar != "") {
@@ -166,13 +174,13 @@ class TraceInsert {
 
 		if ((priorNewline || nextNewline) && pos.line > 0) {
 			// get range of whitespaces at current line
-			let range = editor.document.getWordRangeAtPosition(
+			const range = editor.document.getWordRangeAtPosition(
 				new Position(pos.line, 0), /\s+/);
 
 			if (range !== undefined) {
 				// let's not add an indent if it does not line up with the current cursor
 				if (!nextNewline || range.end.character == pos.character) {
-					let numSpaces = range.end.character - range.start.character;
+					const numSpaces = range.end.character - range.start.character;
 					indent = new Array(numSpaces + 1).join(" ");
 				}
 			}

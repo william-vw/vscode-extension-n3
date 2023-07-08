@@ -1,7 +1,7 @@
 {
-    "http://www.w3.org/1999/02/22-rdf-syntax-ns#": "rdf.txt",
-    "http://www.w3.org/2000/01/rdf-schema#": "rdfs.txt",
-    "http://www.w3.org/2002/07/owl#": "owl.txt",
-    "http://www.w3.org/2001/XMLSchema#": "xsd.txt",
-    "http://purl.org/dc/terms/": "dcterms.txt"
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#": "rdf.json",
+    "http://www.w3.org/2000/01/rdf-schema#": "rdfs.json",
+    "http://www.w3.org/2002/07/owl#": "owl.json",
+    "http://www.w3.org/2001/XMLSchema#": "xsd.json",
+    "http://purl.org/dc/terms/": "dcterms.json"
 }

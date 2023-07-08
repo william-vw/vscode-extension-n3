@@ -16405,6 +16405,11 @@ class n3_nodropTermListener extends n3_nodropListener {
 		this.listener = listener;
 	}
 
+    exitPrefixID(ctx) {
+        if (this.listener.onPrefix)
+            this.listener.onPrefix(ctx.PNAME_NS(), ctx.IRIREF());
+	}
+
     exitIri(ctx) {
         if (ctx.IRIREF()) {
             let iri = ctx.IRIREF() + "";

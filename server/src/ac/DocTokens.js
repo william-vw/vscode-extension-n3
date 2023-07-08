@@ -1,6 +1,6 @@
 import { TokenSet } from './TokenSet.js';
 
-export class TokenSets {
+export class DocTokens {
 
     constructor() {
         this.docTokens = {};

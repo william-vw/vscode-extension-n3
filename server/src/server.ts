@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 /* eslint-disable no-case-declarations */
 /* --------------------------------------------------------------------------------------------
  * Copyright (c) Microsoft Corporation. All rights reserved.
@@ -6,23 +7,18 @@
 import {
 	createConnection,
 	TextDocuments,
-	Range,
 	Diagnostic,
 	DiagnosticSeverity,
 	ProposedFeatures,
 	InitializeParams,
 	DidChangeConfigurationNotification,
 	CompletionItem,
-	CompletionItemKind,
 	TextDocumentPositionParams,
 	TextDocumentSyncKind,
 	InitializeResult,
 	CodeAction,
 	CodeActionKind,
 	DocumentFormattingParams,
-	Command,
-	TextDocumentEdit,
-	Position,
 	TextEdit
 } from 'vscode-languageserver/node';
 
@@ -30,15 +26,15 @@ import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
 
-const n3 = require('./n3Main_nodrop.js');
+const n3 = require('./parser/n3Main_nodrop.js');
 
-import { TokenSets } from './TokenSets.js';
+import { DocTokens } from './ac/DocTokens.js';
 
 // import * as should from 'should';
-import { spawnSync } from "child_process";
-import { format, join, resolve } from 'path';
-import { PythonShell } from 'python-shell';
-import { resourceLimits } from 'worker_threads';
+// import { spawnSync } from "child_process";
+// import { format, join, resolve } from 'path';
+// import { PythonShell } from 'python-shell';
+// import { resourceLimits } from 'worker_threads';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -56,8 +52,9 @@ let hasDiagnosticRelatedInformationCapability = false;
 
 const MSG_UNKNOWN_PREFIX = "Unknown prefix: ";
 
-let namespaces: Map<string, string>;
-let acTokens : TokenSets;
+let knownNsMap: Map<string, string>;
+let prefixMap: Map<string, string>;
+let acTokens : DocTokens;
 
 // ... needed
 let curTextDocument: TextDocument;
@@ -72,18 +69,20 @@ interface InitOptions {
 
 interface AcOptions {
 	enabled: boolean,
-		vocabMap: object
+	vocabMap: object
 }
 
 connection.onInitialize((params: InitializeParams) => {
 	const initOptions : InitOptions = params.initializationOptions;
 	
-	namespaces = new Map(Object.entries(initOptions.nsMap));
-	// connection.console.log("init: " + [...namespaces]);
+	knownNsMap = new Map(Object.entries(initOptions.nsMap));
+	connection.console.log("init: " + JSON.stringify(initOptions, null, 4));
 
 	const acOptions : AcOptions = initOptions.ac;
 	if (acOptions.enabled) {
-		acTokens = new TokenSets();
+		acTokens = new DocTokens();
+		// (only need to keep namespaces for auto-complete)
+		prefixMap = new Map();
 	}
 
 	const capabilities = params.capabilities;
@@ -208,8 +207,13 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
 	const diagnostics: Diagnostic[] = [];
 
+	// reset collected auto-complete tokens, namespaces
+
 	if (acTokens)
 		acTokens.reset(uri);
+
+	if (prefixMap)
+		prefixMap = new Map();
 
 	// connection.console.log("n3?\n" + JSON.stringify(n3, null, 4));
 	n3.parse(text,
@@ -270,8 +274,18 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
 			onTerm: function(type: string, term: any) {
 				// connection.console.log(type + ": " + JSON.stringify(term));
+
+				// collect auto-complete tokens
 				if (acTokens)
 					acTokens.add(uri, type, term);
+			},
+
+			onPrefix: function(prefix: string, uri: string) {
+				// connection.console.log("prefix? " + prefix + ", " + uri);
+
+				// collect namespaces
+				if (prefixMap)
+					prefixMap.set(prefix, uri);
 			}
 
 			// newAstLine: function(line:string) {
@@ -297,8 +311,8 @@ connection.onCodeAction((params) => {
 		if (diagnostic.message.startsWith(MSG_UNKNOWN_PREFIX)) {
 			const prefix: string = diagnostic.message.substring(MSG_UNKNOWN_PREFIX.length);
 
-			if (namespaces.has(prefix)) {
-				const ns = namespaces.get(prefix);
+			if (knownNsMap.has(prefix)) {
+				const ns = knownNsMap.get(prefix);
 				const directive = `@prefix ${prefix}: <${ns}> .\n`;
 
 				// keep any commented lines at the top
@@ -317,7 +331,7 @@ connection.onCodeAction((params) => {
 							}]
 						}
 					}
-				}
+				};
 				codeActions.push(codeAction);
 			}
 		}
