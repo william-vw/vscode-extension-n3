@@ -1,0 +1,15 @@
+Resource
+Class
+subClassOf
+subPropertyOf
+comment
+label
+domain
+range
+seeAlso
+isDefinedBy
+Literal
+Container
+ContainerMembershipProperty
+member
+Datatype

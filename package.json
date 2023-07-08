@@ -136,17 +136,38 @@
 					"scope": "resource",
 					"type": "string",
 					"default": "",
-					"description": "Path to a JSON file with a single object that maps prefixes to their namepace URIs.\n*** Restart extension to load new namespaces ***\n*** See https://github.com/william-vw/vscode-extension-n3/blob/main/namespaces.json for an example ***"
+					"description": "Path to a JSON file with a single object that maps prefixes to their namepace URIs.\n*** Restart extension to load new namespaces ***\n*** See https://github.com/william-vw/vscode-extension-n3/blob/main/data/namespaces.json for an example ***"
+				},
+				"n3LspServer.autocomplete": {
+					"order": 9,
+					"scope": "resource",
+					"type": "boolean",
+					"default": true,
+					"description": "Enable auto-completion of N3 terms."
+				},
+				"n3LspServer.autocompleteWithWellKnownVocabularies": {
+					"order": 10,
+					"scope": "resource",
+					"type": "boolean",
+					"default": true,
+					"description": "Use terms from well-known vocabularies in auto-completion."
+				},
+				"n3LspServer.vocabulariesFile": {
+					"order": 11,
+					"scope": "resource",
+					"type": "string",
+					"default": "",
+					"description": "Path to a JSON file with a single object that maps namespace URIs to text files with their terms. If the related auto-complete option is enabled, these terms will be used in auto-completion.\n*** Restart extension to load new vocabulary terms ***\n*** See https://github.com/william-vw/vscode-extension-n3/blob/main/data/vocab/vocabularies.json for an example ***"
 				},
 				"n3LspServer.maxNumberOfProblems": {
-					"order": 9,
+					"order": 12,
 					"scope": "resource",
 					"type": "number",
 					"default": 100,
 					"description": "Controls the maximum number of problems produced by the server."
 				},
 				"n3LspServer.trace.server": {
-					"order": 10,
+					"order": 13,
 					"scope": "window",
 					"type": "string",
 					"enum": [

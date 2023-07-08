@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 /* --------------------------------------------------------------------------------------------
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
@@ -42,22 +43,43 @@ export function activate(context: ExtensionContext) {
 		}
 	};
 
-	let config = workspace.getConfiguration("n3LspServer");
-	let configNsPath = config.get<string>("namespacesFile");
+	const initOptions = { nsMap: undefined, ac: { enabled: undefined, vocabMap: undefined } };
 
-	let ns;
-	if (configNsPath) {
-		try {
-			ns = require(configNsPath);
-		} catch (e) {
-			window.showErrorMessage(`error loading namespaces file ${configNsPath}`)
+	const config = workspace.getConfiguration("n3LspServer");
+
+	// namespaces file
+
+	const configNsPath = config.get<string>("namespacesFile");
+	const nsMapPath = (configNsPath ? configNsPath : context.asAbsolutePath("data/namespaces.json"));
+	try {
+		initOptions.nsMap = require(nsMapPath);
+	} catch (e) {
+		window.showErrorMessage(`error loading namespaces file ${configNsPath}`);
+	}
+
+	// auto-complete
+
+	const configAc = config.get<boolean>("autocomplete");
+	initOptions.ac.enabled = configAc;
+
+	if (configAc) {
+		const configAcWithVocabs = config.get<boolean>("autocompleteWithWellKnownVocabularies");
+
+		if (configAcWithVocabs) {
+			const configVocabPath = config.get<string>("vocabulariesFile");
+			const rootPath = (configVocabPath ? undefined : "data/vocab/");
+			const vocabMapPath = (configVocabPath ? configVocabPath : context.asAbsolutePath(`${rootPath}vocabularies.json`));
+			
+			try {
+				const vocabMap = require(vocabMapPath);
+				for (const [key, value] of Object.entries(vocabMap))
+					vocabMap[key] = require(`${rootPath}${value}`);
+
+			} catch (e) {
+				window.showErrorMessage(`error loading vocabulary terms file ${configNsPath}`)
+			}
 		}
 	}
-	if (ns == undefined) {
-		let nsPath = context.asAbsolutePath("namespaces.json");
-		ns = require(nsPath);
-	}
-
 
 	// Options to control the language client
 	const clientOptions: LanguageClientOptions = {
@@ -67,7 +89,7 @@ export function activate(context: ExtensionContext) {
 			// Notify the server about file changes to '.clientrc files contained in the workspace
 			fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
 		},
-		initializationOptions: ns
+		initializationOptions: initOptions
 	};
 
 	// Create the language client and start the client.

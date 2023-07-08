@@ -50,11 +50,41 @@ const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
 let hasDiagnosticRelatedInformationCapability = false;
+
+
+// - server globals
+
+const MSG_UNKNOWN_PREFIX = "Unknown prefix: ";
+
 let namespaces: Map<string, string>;
+let acTokens : TokenSets;
+
+// ... needed
+let curTextDocument: TextDocument;
+
+
+// - server initialization
+
+interface InitOptions {
+	nsMap: object,
+	ac: AcOptions
+}
+
+interface AcOptions {
+	enabled: boolean,
+		vocabMap: object
+}
 
 connection.onInitialize((params: InitializeParams) => {
-	namespaces = new Map(Object.entries(params.initializationOptions));
+	const initOptions : InitOptions = params.initializationOptions;
+	
+	namespaces = new Map(Object.entries(initOptions.nsMap));
 	// connection.console.log("init: " + [...namespaces]);
+
+	const acOptions : AcOptions = initOptions.ac;
+	if (acOptions.enabled) {
+		acTokens = new TokenSets();
+	}
 
 	const capabilities = params.capabilities;
 
@@ -83,7 +113,7 @@ connection.onInitialize((params: InitializeParams) => {
 			documentFormattingProvider: true,
 			completionProvider: {
 				triggerCharacters: ['<', '?', ':']
-			  }
+			}
 		}
 	};
 	if (hasWorkspaceFolderCapability) {
@@ -108,6 +138,8 @@ connection.onInitialized(() => {
 	}
 });
 
+
+// - server configuration 
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
@@ -151,18 +183,15 @@ documents.onDidClose(e => {
 	documentSettings.delete(e.document.uri);
 });
 
+
+// - parse n3 document
+// (includes syntax validation, updating AC tokens)
+
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 documents.onDidChangeContent(change => {
 	validateTextDocument(change.document);
 });
-
-const MSG_UNKNOWN_PREFIX = "Unknown prefix: ";
-
-// ... needed
-let curTextDocument: TextDocument;
-
-const docTokens = new TokenSets();
 
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// In this simple example we get the settings for every validate run.
@@ -178,7 +207,9 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// let problems = 0;
 
 	const diagnostics: Diagnostic[] = [];
-	docTokens.reset(uri);
+
+	if (acTokens)
+		acTokens.reset(uri);
 
 	// connection.console.log("n3?\n" + JSON.stringify(n3, null, 4));
 	n3.parse(text,
@@ -239,7 +270,8 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
 			onTerm: function(type: string, term: any) {
 				// connection.console.log(type + ": " + JSON.stringify(term));
-				docTokens.add(uri, type, term);
+				if (acTokens)
+					acTokens.add(uri, type, term);
 			}
 
 			// newAstLine: function(line:string) {
@@ -250,6 +282,9 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// connection.console.log("diagnostics?\n" + JSON.stringify(diagnostics, null, 4));
 	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
 }
+
+
+// - import namespaces
 
 connection.onCodeAction((params) => {
 	// connection.console.log("params? " + JSON.stringify(params, null, 4));
@@ -314,6 +349,9 @@ function skipComments(text: string): number {
 	return lineCnt;
 }
 
+
+// - format n3 document
+
 connection.onDocumentFormatting(formatDocument);
 
 async function formatDocument(params: DocumentFormattingParams): Promise<TextEdit[]> {
@@ -338,7 +376,7 @@ async function formatDocument(params: DocumentFormattingParams): Promise<TextEdi
 }
 
 async function formatCode(text: string, settings: any) {
-	let formatNs = settings["formatNamespaces"];
+	const formatNs = settings["formatNamespaces"];
 	return n3.format(text,{
 			tab: 4,
 			graphOnNewline: true,
@@ -351,8 +389,14 @@ async function formatCode(text: string, settings: any) {
 // 	connection.console.log('We received an file change event');
 // });
 
+
+// - auto-completion of terms
+
 connection.onCompletion(
 	(params: TextDocumentPositionParams): CompletionItem[] => {
+		if (!acTokens)
+			return [];
+
 		const uri = params.textDocument.uri;
 		// connection.console.log("uri? " + uri);
 		
@@ -390,6 +434,8 @@ connection.onCompletion(
 					local = true;
 				} else {
 					type = 'pname';
+					// get all localnames under the "needle" prefix
+					// (vscode will take care of auto-completion for any returned strings)
 					needle = expanded.substring(0, expanded.length - 1);
 				}
 				break;
@@ -399,9 +445,9 @@ connection.onCompletion(
 
 		let results: string[];
 		if (local)
-			results = docTokens.get(uri, type, needle);
+			results = acTokens.get(uri, type, needle);
 		else
-			results = docTokens.getAll(type, needle);
+			results = acTokens.getAll(type, needle);
 
 		// connection.console.log("results? " + results);
 

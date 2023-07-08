@@ -6,7 +6,7 @@ Provides N3 syntax checking, code themes, formatting, and N3 code execution.
 ## Syntax Checking
 N3 code syntax is checked as per the latest [N3 grammar](https://w3c.github.io/N3/spec/#grammar).
 
-Missing namespaces are suggested based on a [default file](https://github.com/william-vw/vscode-extension-n3/blob/main/namespaces.json) that is currently quite limited. You can extend this file and point to its path in the extension settings.
+Missing namespaces are suggested based on a [default file](https://github.com/william-vw/vscode-extension-n3/blob/main/data/namespaces.json) that is currently quite limited. You can extend this file and point to its path in the extension settings.
 
 
 ## Code Theme
