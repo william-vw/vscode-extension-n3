@@ -16388,6 +16388,8 @@ class n3_nodropPrefixListener extends n3_nodropListener {
 
 	iri(node) {
 		var s = this.text(node);
+        if (s == null)
+            return null;
 		return s.substring(1, s.length - 1);
 	}
 }
