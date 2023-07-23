@@ -1,5 +1,6 @@
-v1.3.1
+v1.4
 fix issue with n3 grammar (re-introduced upon retaining comments)
 enable/disable auto-complete
 support auto-complete with well-known vocabularies
 fix error with auto-insert of prefixes
+support multiple modes to cope with unknown namespaces
