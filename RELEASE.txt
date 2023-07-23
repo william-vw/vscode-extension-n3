@@ -2,3 +2,4 @@ v1.3.1
 fix issue with n3 grammar (re-introduced upon retaining comments)
 enable/disable auto-complete
 support auto-complete with well-known vocabularies
+fix error with auto-insert of prefixes

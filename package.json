@@ -136,7 +136,18 @@
 					"scope": "resource",
 					"type": "string",
 					"default": "",
-					"description": "Path to a JSON file with a single object that maps prefixes to their namepace URIs.\n*** Restart extension to load new namespaces ***\n*** See https://github.com/william-vw/vscode-extension-n3/blob/main/data/namespaces.json for an example ***"
+					"description": "Path to a JSON file with a single object that maps prefixes to their namepace URIs. This is used to suggest or directly insert namespaces when their prefix is found.\n*** Restart editor to load new namespaces ***\n*** See https://github.com/william-vw/vscode-extension-n3/blob/main/data/namespaces.json for an example ***"
+				},
+				"n3LspServer.insertNamespaces": {
+					"order": 8,
+					"scope": "resource",
+					"type": "string",
+					"enum": [
+						"Automatic",
+						"Suggest"
+					],
+					"default": "Automatic",
+					"description": "When found, insert a known namespace directly (Automatic) or suggest a code action (Suggest).\n*** Restart editor to have this setting take effect ***"
 				},
 				"n3LspServer.autocomplete": {
 					"order": 9,
@@ -157,7 +168,7 @@
 					"scope": "resource",
 					"type": "string",
 					"default": "",
-					"description": "Path to a JSON file with a single object that maps namespace URIs to text files with their terms. If the related auto-complete option is enabled, these terms will be used in auto-completion.\n*** Restart extension to load new vocabulary terms ***\n*** See https://github.com/william-vw/vscode-extension-n3/blob/main/data/vocab/vocabularies.json for an example ***"
+					"description": "Path to a JSON file with a single object that maps namespace URIs to text files with their terms. If the relevant auto-complete option is enabled, these terms will also be used in auto-completion.\n*** Restart editor to load new vocabulary terms ***\n*** See https://github.com/william-vw/vscode-extension-n3/blob/main/data/vocab/ for an example vocabularies.json file and files with predefined vocabulary terms. ***"
 				},
 				"n3LspServer.maxNumberOfProblems": {
 					"order": 12,

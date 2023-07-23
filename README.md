@@ -30,6 +30,17 @@ meaning they are grouped at the top, written using the '@' syntax, and sorted al
 This option can be turned off in the extension settings.
 
 
+## Auto-complete
+
+The extension suggests namespaces when their associated prefixes are found. Well-known namespaces are pre-loaded from a file (see settings). 
+You can choose whether these should be inserted immediately, or suggested as code actions (see settings).  
+
+Auto-complete term suggestions are made based on the contents of currently open N3 files, as well as well-known vocabularies. 
+You can add new vocabularies by configuring a vocabularies file (see settings).
+
+Auto-complete features can be turned off in settings.
+
+
 ## Debugging
 
 You can debug your N3 code using [eye](https://github.com/eyereasoner/eye). (Command Palette - `N3: Debug N3 Code`). 

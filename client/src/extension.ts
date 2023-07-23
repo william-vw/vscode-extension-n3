@@ -4,17 +4,31 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-import * as path from 'path';
-import { commands, ExtensionContext, languages, Position, Range, Selection, TextEditor, TextEditorEdit, window, workspace } from 'vscode';
+import * as path from "path";
+import {
+	commands,
+	ExtensionContext,
+	languages,
+	Position,
+	Range,
+	Selection,
+	TextEdit,
+	TextEditor,
+	TextEditorEdit,
+	window,
+	workspace,
+} from "vscode";
 
+import * as vscode from "vscode";
 import {
 	LanguageClient,
 	LanguageClientOptions,
 	ServerOptions,
-	TransportKind
-} from 'vscode-languageclient/node';
+	TextDocument,
+	TransportKind,
+} from "vscode-languageclient/node";
 
-import { runN3Execute, runN3Debug } from './n3/n3Execute';
+import { runN3Execute, runN3Debug } from "./n3/n3Execute";
 import { n3OutputChannel } from "./n3/n3OutputChannel";
 
 let client: LanguageClient;
@@ -26,11 +40,11 @@ export function activate(context: ExtensionContext) {
 
 	// The server is implemented in node
 	const serverModule = context.asAbsolutePath(
-		path.join('server', 'out', 'server.js')
+		path.join("server", "out", "server.js")
 	);
 	// The debug options for the server
 	// --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
-	const debugOptions = { execArgv: ['--nolazy', '--inspect=6009'] };
+	const debugOptions = { execArgv: ["--nolazy", "--inspect=6009"] };
 
 	// If the extension is launched in debug mode then the debug server options are used
 	// Otherwise the run options are used
@@ -39,22 +53,31 @@ export function activate(context: ExtensionContext) {
 		debug: {
 			module: serverModule,
 			transport: TransportKind.ipc,
-			options: debugOptions
-		}
+			options: debugOptions,
+		},
 	};
 
-	const initOptions = { nsMap: undefined, ac: { enabled: undefined, vocabMap: undefined } };
+	const initOptions = {
+		ns: { map: undefined, mode: undefined },
+		ac: { enabled: undefined, vocabMap: undefined },
+	};
 
 	const config = workspace.getConfiguration("n3LspServer");
 
 	// namespaces file
 
 	const configNsPath = config.get<string>("namespacesFile");
-	const nsMapPath = (configNsPath ? configNsPath : context.asAbsolutePath("data/namespaces.json"));
+	const nsMapPath = configNsPath
+		? configNsPath
+		: context.asAbsolutePath("data/namespaces.json");
+	const nsMode = config.get<string>("insertNamespaces");
 	try {
-		initOptions.nsMap = require(nsMapPath);
+		initOptions.ns.map = require(nsMapPath);
+		initOptions.ns.mode = nsMode;
 	} catch (e) {
-		window.showErrorMessage(`error loading namespaces file ${configNsPath}: ${e}`);
+		window.showErrorMessage(
+			`error loading namespaces file ${configNsPath}: ${e}`
+		);
 	}
 
 	// auto-complete
@@ -63,47 +86,53 @@ export function activate(context: ExtensionContext) {
 	initOptions.ac.enabled = configAc;
 
 	if (configAc) {
-		const configAcWithVocabs = config.get<boolean>("autocompleteWithWellKnownVocabularies");
+		const configAcWithVocabs = config.get<boolean>(
+			"autocompleteWithWellKnownVocabularies"
+		);
 
 		if (configAcWithVocabs) {
 			const configVocabPath = config.get<string>("vocabulariesFile");
-			const rootPath = (configVocabPath ? undefined : "data/vocab/");
-			const vocabMapPath = (configVocabPath ? 
-				configVocabPath : 
-				context.asAbsolutePath(`${rootPath}vocabularies.json`)
-			);
-			
+			const rootPath = configVocabPath ? undefined : "data/vocab/";
+			const vocabMapPath = configVocabPath
+				? configVocabPath
+				: context.asAbsolutePath(`${rootPath}vocabularies.json`);
+
 			try {
 				const vocabMap = require(vocabMapPath);
 				for (const key in vocabMap) {
-					const value : string = vocabMap[key];
-					const path : string = (configVocabPath ? value : context.asAbsolutePath(rootPath + value));
+					const value: string = vocabMap[key];
+					const path: string = configVocabPath
+						? value
+						: context.asAbsolutePath(`${rootPath}${value}`);
 
 					vocabMap[key] = require(path);
 				}
 				initOptions.ac.vocabMap = vocabMap;
-
 			} catch (e) {
-				window.showErrorMessage(`error loading vocabulary terms file ${configNsPath}: ${e}`);
+				window.showErrorMessage(
+					`Error loading vocabulary terms file ${path}:\n${e}`
+				);
 			}
 		}
 	}
 
+	console.log("config", initOptions.ac);
+
 	// Options to control the language client
 	const clientOptions: LanguageClientOptions = {
 		// Register the server for plain text documents
-		documentSelector: [{ scheme: 'file', language: 'n3' }],
+		documentSelector: [{ scheme: "file", language: "n3" }],
 		synchronize: {
 			// Notify the server about file changes to '.clientrc files contained in the workspace
-			fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
+			fileEvents: workspace.createFileSystemWatcher("**/.clientrc"),
 		},
-		initializationOptions: initOptions
+		initializationOptions: initOptions,
 	};
 
 	// Create the language client and start the client.
 	client = new LanguageClient(
-		'N3languageServer',
-		'N3 Language Server',
+		"N3languageServer",
+		"N3 Language Server",
 		serverOptions,
 		clientOptions
 	);
@@ -113,30 +142,54 @@ export function activate(context: ExtensionContext) {
 
 	// - N3Execute
 
-	context.subscriptions.push(commands.registerCommand("n3.execute", async () => {
-		await runN3Execute(context);
-	}));
+	context.subscriptions.push(
+		commands.registerCommand("n3.execute", async () => {
+			await runN3Execute(context);
+		})
+	);
 
 	// - N3Debug
 
-	context.subscriptions.push(commands.registerCommand("n3.debug", async () => {
-		await runN3Debug(context);
-	}));
+	context.subscriptions.push(
+		commands.registerCommand("n3.debug", async () => {
+			await runN3Debug(context);
+		})
+	);
 
+	// insert test traces
 	const traceInsert = new TraceInsert();
-	context.subscriptions.push(commands.registerTextEditorCommand("n3.addTrace",
-		async (editor: TextEditor, edit: TextEditorEdit) =>
-			editor.selections.forEach((selection, i) => traceInsert.insert(editor, edit, selection))
-	));
+	context.subscriptions.push(
+		commands.registerTextEditorCommand(
+			"n3.addTrace",
+			async (editor: TextEditor, edit: TextEditorEdit) =>
+				editor.selections.forEach((selection, i) =>
+					traceInsert.insert(editor, edit, selection)
+				)
+		)
+	);
+
+	// execute updates requested from server
+	// (in our case, requests to insert namespaces)
+	client.onReady().then(() => {
+		client.onNotification("updateText", (edits: TextEdit[]) => {
+			//   n3OutputChannel.append("received: " + JSON.stringify(edits, null, 4));
+
+			const editor = vscode.window.activeTextEditor;
+			edits.forEach((edit) => {
+				editor.edit((editBuilder) => {
+					editBuilder.insert(edit.range.start, edit.newText);
+				});
+			});
+		});
+	});
 }
 
 class TraceInsert {
-
 	prefix = "T";
 	cnt = 0;
 
 	insert(editor: TextEditor, edit: TextEditorEdit, selection: Selection): void {
-		let text = `"${(this.prefix + this.cnt++)}" log:trace (  ) .`;
+		let text = `"${this.prefix + this.cnt++}" log:trace (  ) .`;
 		const pos = selection.active;
 
 		let priorNewline = false;
@@ -147,7 +200,9 @@ class TraceInsert {
 		// not at start of line, so may need newline for this trace
 		if (pos.character > 0) {
 			const wsRange = editor.document.getWordRangeAtPosition(
-				new Position(pos.line, 0), /\s+/);
+				new Position(pos.line, 0),
+				/\s+/
+			);
 
 			// if all prior characters are whitespaces, don't need newline
 			if (!(wsRange !== undefined && wsRange.end.character >= pos.character)) {
@@ -164,7 +219,8 @@ class TraceInsert {
 		}
 
 		const nextChar = editor.document.getText(
-			new Range(new Position(pos.line, pos.character + 1), pos));
+			new Range(new Position(pos.line, pos.character + 1), pos)
+		);
 		// if any next character, insert newline to put it on next line
 		if (nextChar != "") {
 			nextNewline = true;
@@ -175,7 +231,9 @@ class TraceInsert {
 		if ((priorNewline || nextNewline) && pos.line > 0) {
 			// get range of whitespaces at current line
 			const range = editor.document.getWordRangeAtPosition(
-				new Position(pos.line, 0), /\s+/);
+				new Position(pos.line, 0),
+				/\s+/
+			);
 
 			if (range !== undefined) {
 				// let's not add an indent if it does not line up with the current cursor
@@ -187,8 +245,7 @@ class TraceInsert {
 		}
 
 		text =
-			(priorNewline ? priorEndChar + "\n" + indent
-				: "") +
+			(priorNewline ? priorEndChar + "\n" + indent : "") +
 			text +
 			(nextNewline ? "\n" + indent : "");
 

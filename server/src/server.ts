@@ -19,16 +19,15 @@ import {
 	CodeAction,
 	CodeActionKind,
 	DocumentFormattingParams,
-	TextEdit
-} from 'vscode-languageserver/node';
+	TextEdit,
+} from "vscode-languageserver/node";
 
-import {
-	TextDocument
-} from 'vscode-languageserver-textdocument';
+import { TextDocument } from "vscode-languageserver-textdocument";
 
-const n3 = require('./parser/n3Main_nodrop.js');
+const n3 = require("./parser/n3Main_nodrop.js");
 
-import { DocTokens } from './ac/DocTokens.js';
+// (ac)
+import { DocTokens } from "./ac/DocTokens.js";
 
 // import * as should from 'should';
 // import { spawnSync } from "child_process";
@@ -47,42 +46,62 @@ let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
 let hasDiagnosticRelatedInformationCapability = false;
 
-
 // - server globals
 
 const MSG_UNKNOWN_PREFIX = "Unknown prefix: ";
 
-let knownNsMap: Map<string, string>;
-let prefixMap: Map<string, string>;
-let acTokens : DocTokens;
+let nsMode: NsModes;
+let knownNsMap: Map<string, string>; // keeps configured prefix->ns map
+let prefixMap: Map<string, string>; // keeps current prefix->ns
+// (ac)
+let vocabMap: Map<string, string[]>; // keeps configured ns->terms map
+let acTokens: DocTokens; // keeps current ac tokens
 
 // ... needed
 let curTextDocument: TextDocument;
 
-
 // - server initialization
 
+enum NsModes {
+	Automatic = "Automatic",
+	Suggest = "Suggest",
+}
+
 interface InitOptions {
-	nsMap: object,
-	ac: AcOptions
+	ns: NsOptions;
+	ac: AcOptions;
+}
+
+interface NsOptions {
+	map: object;
+	mode: string;
 }
 
 interface AcOptions {
-	enabled: boolean,
-	vocabMap: object
+	enabled: boolean;
+	vocabMap: Map<string, string[]>;
 }
 
 connection.onInitialize((params: InitializeParams) => {
-	const initOptions : InitOptions = params.initializationOptions;
-	
-	knownNsMap = new Map(Object.entries(initOptions.nsMap));
-	connection.console.log("init: " + JSON.stringify(initOptions, null, 4));
+	const initOptions: InitOptions = params.initializationOptions;
+	// connection.console.log("init: " + JSON.stringify(initOptions, null, 4));
 
-	const acOptions : AcOptions = initOptions.ac;
+	nsMode = <NsModes>initOptions.ns.mode;
+	connection.console.log("nsMode?" + nsMode);
+
+	knownNsMap = new Map(Object.entries(initOptions.ns.map));
+	prefixMap = new Map();
+
+	// (ac)
+	const acOptions: AcOptions = initOptions.ac;
 	if (acOptions.enabled) {
 		acTokens = new DocTokens();
-		// (only need to keep namespaces for auto-complete)
-		prefixMap = new Map();
+
+		if (acOptions.vocabMap) {
+			vocabMap = new Map(Object.entries(acOptions.vocabMap));
+			// (one way to print map contents..)
+			// connection.console.log("vocabMap:" + JSON.stringify(Object.fromEntries(vocabMap)));
+		}
 	}
 
 	const capabilities = params.capabilities;
@@ -111,15 +130,15 @@ connection.onInitialize((params: InitializeParams) => {
 			codeActionProvider: true,
 			documentFormattingProvider: true,
 			completionProvider: {
-				triggerCharacters: ['<', '?', ':']
-			}
-		}
+				triggerCharacters: ["<", "?", ":"],
+			},
+		},
 	};
 	if (hasWorkspaceFolderCapability) {
 		result.capabilities.workspace = {
 			workspaceFolders: {
-				supported: true
-			}
+				supported: true,
+			},
 		};
 	}
 	return result;
@@ -128,17 +147,19 @@ connection.onInitialize((params: InitializeParams) => {
 connection.onInitialized(() => {
 	if (hasConfigurationCapability) {
 		// Register for all configuration changes.
-		connection.client.register(DidChangeConfigurationNotification.type, undefined);
+		connection.client.register(
+			DidChangeConfigurationNotification.type,
+			undefined
+		);
 	}
 	if (hasWorkspaceFolderCapability) {
-		connection.workspace.onDidChangeWorkspaceFolders(_event => {
-			connection.console.log('Workspace folder change event received.');
+		connection.workspace.onDidChangeWorkspaceFolders((_event) => {
+			connection.console.log("Workspace folder change event received.");
 		});
 	}
 });
 
-
-// - server configuration 
+// - server configuration
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
@@ -148,14 +169,12 @@ let globalSettings: any;
 // Cache the settings of all open documents
 const documentSettings: Map<string, Thenable<any>> = new Map();
 
-connection.onDidChangeConfiguration(change => {
+connection.onDidChangeConfiguration((change) => {
 	if (hasConfigurationCapability) {
 		// Reset all cached document settings
 		documentSettings.clear();
 	} else {
-		globalSettings = <any>(
-			(change.settings.n3LspServer)
-		);
+		globalSettings = <any>change.settings.n3LspServer;
 	}
 
 	// Revalidate all open text documents
@@ -170,7 +189,7 @@ function getDocumentSettings(resource: string): Thenable<any> {
 	if (!result) {
 		result = connection.workspace.getConfiguration({
 			scopeUri: resource,
-			section: 'n3LspServer'
+			section: "n3LspServer",
 		});
 		documentSettings.set(resource, result);
 	}
@@ -178,17 +197,16 @@ function getDocumentSettings(resource: string): Thenable<any> {
 }
 
 // Only keep settings for open documents
-documents.onDidClose(e => {
+documents.onDidClose((e) => {
 	documentSettings.delete(e.document.uri);
 });
-
 
 // - parse n3 document
 // (includes syntax validation, updating AC tokens)
 
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
-documents.onDidChangeContent(change => {
+documents.onDidChangeContent((change) => {
 	validateTextDocument(change.document);
 });
 
@@ -196,7 +214,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// In this simple example we get the settings for every validate run.
 	// const settings = await getDocumentSettings(textDocument.uri);
 
-	const uri = textDocument.uri;
+	const docUri = textDocument.uri;
 
 	curTextDocument = textDocument;
 	const text = textDocument.getText();
@@ -206,50 +224,137 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// let problems = 0;
 
 	const diagnostics: Diagnostic[] = [];
+	const edits: TextEdit[] = [];
 
-	// reset collected auto-complete tokens, namespaces
+	// reset collected auto-complete tokens
 
-	if (acTokens)
-		acTokens.reset(uri);
-
-	if (prefixMap)
-		prefixMap = new Map();
+	// (ac)
+	acTokens?.reset(docUri);
+	prefixMap?.clear();
 
 	// connection.console.log("n3?\n" + JSON.stringify(n3, null, 4));
-	n3.parse(text,
-		{
-			syntaxError: function (recognizer: any, offendingSymbol: any,
-				line: any, column: any, msg: string, err: any) {
+	n3.parse(text, {
+		syntaxError: function (
+			recognizer: any,
+			offendingSymbol: any,
+			line: any,
+			column: any,
+			msg: string,
+			err: any
+		) {
+			// connection.console.log(
+			// 	"syntaxError: " +
+			// 	offendingSymbol +
+			// 	" - " +
+			// 	line +
+			// 	" - " +
+			// 	column +
+			// 	" - " +
+			// 	msg +
+			// 	" - " +
+			// 	err
+			// );
 
-				// connection.console.log("syntaxError: " + offendingSymbol + " - " +
-				// 	line + " - " + column + " - " + msg + " - " + err);
+			// see Token class in n3Main.js
+			let start, end;
+			if (offendingSymbol != null) {
+				start = textDocument.positionAt(offendingSymbol.start);
+				end = textDocument.positionAt(offendingSymbol.stop);
 
-				let start, end;
-				if (offendingSymbol != null) {
-					// see Token class in n3Main.js
-					start = textDocument.positionAt(offendingSymbol.start);
-					end = textDocument.positionAt(offendingSymbol.stop);
-				} else {
-					start = { line: line, character: column };
-					end = start;
+				// (ac)
+				// problem: the compiler only recognizes prefixes (see unknownPrefix)
+				//  once it's too late, i.e., we already started typing the local name
+				// we want ac items of well-known prefixes to show up immediately 
+				
+				// thankfully, validateTextDocument is called before onCompletion
+				// so, below code will find a possible prefix when EOF is encountered
+				// (error that shows up when typing e.g., "rdf:")
+				// and populate acTokens with the well-known prefixes' terms
+
+				if (offendingSymbol.type == -1) { // (-1: EOF)
+					const line = textDocument.getText({
+						start: { line: start.line, character: 0 },
+						end: { line: start.line, character: start.character },
+					});
+					// at s/p/o position
+					const spIdx = line.lastIndexOf(" ");
+					let possiblePrefix = (
+						spIdx != -1 ? line.substring(spIdx) : line
+					).trim();
+
+					if (possiblePrefix != "") {
+						possiblePrefix = possiblePrefix.substring(
+							0,
+							possiblePrefix.length - 1
+						);
+
+						// connection.console.log("possiblePrefix: '" + possiblePrefix + "'");
+						// will keep getting EOF error so let's not go into infinite loop
+						if (!prefixMap.has(possiblePrefix)) {
+							if (knownNsMap.has(possiblePrefix)) {
+								const uri = knownNsMap.get(possiblePrefix)!;
+
+								prefixMap.set(possiblePrefix, uri);
+								// this results in ac options not being shown :-(
+								// so, ac will happen first, and only then is ns inserted
+								// edits.push(
+								// 	getInsertNamespace(curTextDocument, possiblePrefix, uri)
+								// );
+
+								if (vocabMap?.has(uri)) {
+									const terms: string[] = vocabMap.get(uri)!;
+									terms.forEach((t) => acTokens.add(docUri, "pname", [possiblePrefix, t]));
+								}
+							}
+						}
+					}
 				}
+			} else {
+				start = { line: line, character: column };
+				end = start;
+			}
 
-				const diagnostic: Diagnostic = {
-					severity: DiagnosticSeverity.Error,
-					range: {
-						start: start,
-						end: end
-					},
-					message: msg,
-					source: 'n3'
-				};
+			const diagnostic: Diagnostic = {
+				severity: DiagnosticSeverity.Error,
+				range: {
+					start: start,
+					end: end,
+				},
+				message: msg,
+				source: "n3",
+			};
 
-				diagnostics.push(diagnostic);
-			},
+			diagnostics.push(diagnostic);
+		},
 
-			unknownPrefix: function (prefix: string, pName: string, line: number, start: number, end: number) {
-				// connection.console.log("unknownPrefix: " + prefix + " - " + pName + " - " + line + " - " + start + " - " + end);
+		unknownPrefix: function (
+			prefix: string,
+			pName: string,
+			line: number,
+			start: number,
+			end: number
+		) {
+			connection.console.log(
+				"unknownPrefix: " +
+				prefix +
+				" - " +
+				pName +
+				" - " +
+				line +
+				" - " +
+				start +
+				" - " +
+				end
+			);
 
+			// if we know this prefix, let's insert it directly!
+			if (nsMode == NsModes.Automatic && knownNsMap.has(prefix)) {
+				const uri = knownNsMap.get(prefix)!;
+
+				edits.push(getInsertNamespace(curTextDocument, prefix, uri));
+
+				// else, let's show an error :-(
+			} else {
 				line = line - 1; // ??
 				const startPos = { line: line, character: start };
 				const endPos = { line: line, character: start + prefix.length };
@@ -259,44 +364,78 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 					severity: DiagnosticSeverity.Error,
 					range: {
 						start: startPos,
-						end: endPos
+						end: endPos,
 					},
 					message: msg,
-					source: 'n3',
-					data: textDocument
+					source: "n3",
+					data: textDocument,
 				};
 				diagnostics.push(diagnostic);
-			},
-
-			consoleError: function (type: string, line: string, start: string, end: string, msg: string) {
-				connection.console.log("consoleError" + type + " - " + line + " - " + start + " - " + end + " - " + msg);
-			},
-
-			onTerm: function(type: string, term: any) {
-				// connection.console.log(type + ": " + JSON.stringify(term));
-
-				// collect auto-complete tokens
-				if (acTokens)
-					acTokens.add(uri, type, term);
-			},
-
-			onPrefix: function(prefix: string, uri: string) {
-				// connection.console.log("prefix? " + prefix + ", " + uri);
-
-				// collect namespaces
-				if (prefixMap)
-					prefixMap.set(prefix, uri);
 			}
+		},
 
-			// newAstLine: function(line:string) {
-			// 	connection.console.log("ast" + line);
-			// }
-		});
+		consoleError: function (
+			type: string,
+			line: string,
+			start: string,
+			end: string,
+			msg: string
+		) {
+			connection.console.log(
+				"consoleError" +
+				type +
+				" - " +
+				line +
+				" - " +
+				start +
+				" - " +
+				end +
+				" - " +
+				msg
+			);
+		},
+
+		// TODO associate pnames with namespace uris, not prefixes
+		// (already works this way with well-known vocabulary terms)
+
+		onTerm: function (type: string, term: any) {
+			// connection.console.log(type + ": " + JSON.stringify(term));
+
+			// (ac) collect auto-complete tokens
+			acTokens?.add(docUri, type, term);
+		},
+
+		onPrefix: function (prefix: string, uri: string) {
+			prefix = String(prefix);
+			prefix = prefix.substring(0, prefix.length - 1); // remove ":"
+
+			uri = String(uri);
+			uri = uri.substring(1, uri.length - 1); // remove "<" and ">"
+
+			prefixMap?.set(prefix, uri);
+
+			// (ac) if prefix was defined for a known vocabulary,
+			// then add vocabulary's terms to acTokens under this prefix
+
+			// in case the prefix is already there
+			// syntaxError takes care of cases where prefix is being typed
+
+			// connection.console.log("onPrefix? " + prefix + ", " + uri);
+			if (vocabMap?.has(uri)) {
+				const terms: string[] = vocabMap.get(uri)!;
+				terms.forEach((t) => acTokens.add(docUri, "pname", [prefix, t]));
+			}
+		},
+
+		// newAstLine: function(line:string) {
+		// 	connection.console.log("ast" + line);
+		// }
+	});
 
 	// connection.console.log("diagnostics?\n" + JSON.stringify(diagnostics, null, 4));
 	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
+	if (edits.length > 0) connection.sendNotification("updateText", edits);
 }
-
 
 // - import namespaces
 
@@ -307,31 +446,27 @@ connection.onCodeAction((params) => {
 	// connection.console.log("diagns? " + JSON.stringify(diagnostics, null, 4));
 	const codeActions: CodeAction[] = [];
 	for (const diagnostic of diagnostics) {
-
 		if (diagnostic.message.startsWith(MSG_UNKNOWN_PREFIX)) {
-			const prefix: string = diagnostic.message.substring(MSG_UNKNOWN_PREFIX.length);
+			const prefix: string = diagnostic.message.substring(
+				MSG_UNKNOWN_PREFIX.length
+			);
+			// connection.console.log("prefix: " + prefix);
 
 			if (knownNsMap.has(prefix)) {
-				const ns = knownNsMap.get(prefix);
-				const directive = `@prefix ${prefix}: <${ns}> .\n`;
+				const uri = knownNsMap.get(prefix)!;
+				const edit = getInsertNamespace(curTextDocument, prefix, uri);
 
-				// keep any commented lines at the top
-				// (could be annotations such as @alsoload)
-
-				const lineNr = skipComments(curTextDocument.getText());
 				const codeAction: CodeAction = {
 					title: `Import ${prefix} namespace`,
 					kind: CodeActionKind.QuickFix,
 					diagnostics: [diagnostic],
 					edit: {
 						changes: {
-							[params.textDocument.uri]: [{
-								range: { start: { line: lineNr, character: 0 }, end: { line: lineNr, character: 0 } },
-								newText: directive
-							}]
-						}
-					}
+							[params.textDocument.uri]: [edit],
+						},
+					},
 				};
+
 				codeActions.push(codeAction);
 			}
 		}
@@ -340,15 +475,47 @@ connection.onCodeAction((params) => {
 	return codeActions;
 });
 
-function skipComments(text: string): number {
-	let lineCnt = -1, startIdx: number, endIdx = -1, curLine: string;
+function getInsertNamespace(
+	textDocument: TextDocument,
+	prefix: string,
+	uri: string
+): TextEdit {
+	// keep any commented lines at the top
+	// (could be annotations such as @alsoload)
+	// also, add extra newline if next is not prefix
+
+	const info = getNamespaceInfo(textDocument.getText());
+
+	let directive = `@prefix ${prefix}: <${uri}> .\n`;
+	if (!info.nextIsPrefix) directive += "\n";
+
+	return {
+		range: {
+			start: { line: info.lineNr, character: 0 },
+			end: { line: info.lineNr, character: 0 },
+		},
+		newText: directive,
+	};
+}
+
+interface NamespaceInfo {
+	lineNr: number;
+	nextIsPrefix: boolean;
+}
+
+function getNamespaceInfo(text: string): NamespaceInfo {
+	let lineCnt = -1,
+		startIdx: number,
+		endIdx = -1,
+		curLine: string;
 	do {
 		startIdx = endIdx + 1;
 		endIdx = text.indexOf("\n", startIdx);
+		if (endIdx == -1) return { lineNr: 0, nextIsPrefix: false };
+
 		curLine = text.substring(startIdx, endIdx).trim();
 
 		lineCnt++;
-
 	} while (curLine.startsWith("#"));
 
 	// skip newlines that come after as well
@@ -360,15 +527,22 @@ function skipComments(text: string): number {
 		lineCnt++;
 	}
 
-	return lineCnt;
-}
+	// whether next line is also prefix
+	const nextIsPrefix = curLine.trim().startsWith("@prefix");
 
+	return {
+		lineNr: lineCnt,
+		nextIsPrefix: nextIsPrefix,
+	};
+}
 
 // - format n3 document
 
 connection.onDocumentFormatting(formatDocument);
 
-async function formatDocument(params: DocumentFormattingParams): Promise<TextEdit[]> {
+async function formatDocument(
+	params: DocumentFormattingParams
+): Promise<TextEdit[]> {
 	const doc = documents.get(params.textDocument.uri)!;
 	const settings = await getDocumentSettings(params.textDocument.uri);
 
@@ -378,24 +552,25 @@ async function formatDocument(params: DocumentFormattingParams): Promise<TextEdi
 	if (formatted) {
 		// connection.console.log("formatted? " + formatted);
 		const edit: TextEdit = {
-			range: { start: { line: 0, character: 0 }, end: { line: doc.lineCount, character: 0 } },
-			newText: formatted
+			range: {
+				start: { line: 0, character: 0 },
+				end: { line: doc.lineCount, character: 0 },
+			},
+			newText: formatted,
 		};
 
 		// connection.console.log("edit?\n" + JSON.stringify(edit, null, 4));
-		return [ edit ];
-
-	} else
-		return [];
+		return [edit];
+	} else return [];
 }
 
 async function formatCode(text: string, settings: any) {
 	const formatNs = settings["formatNamespaces"];
-	return n3.format(text,{
-			tab: 4,
-			graphOnNewline: true,
-			formatNamespaces: formatNs
-		});
+	return n3.format(text, {
+		tab: 4,
+		graphOnNewline: true,
+		formatNamespaces: formatNs,
+	});
 }
 
 // connection.onDidChangeWatchedFiles(_change => {
@@ -403,54 +578,54 @@ async function formatCode(text: string, settings: any) {
 // 	connection.console.log('We received an file change event');
 // });
 
-
-// - auto-completion of terms
+// (ac) auto-completion of terms
 
 connection.onCompletion(
 	(params: TextDocumentPositionParams): CompletionItem[] => {
-		if (!acTokens)
-			return [];
+		if (!acTokens) return [];
 
 		const uri = params.textDocument.uri;
 		// connection.console.log("uri? " + uri);
-		
+
 		const doc = documents.get(uri)!;
 
-		const symbol = doc.getText(
-			{
-				start: params.position,
-				end: { line: params.position.line, character: params.position.character - 1 }
-			}
-		);
+		const symbol = doc.getText({
+			start: params.position,
+			end: {
+				line: params.position.line,
+				character: params.position.character - 1,
+			},
+		});
 		// connection.console.log("symbol? " + symbol);
 
-		let type, local = false, needle;
+		let type,
+			local = false,
+			needle;
 		switch (symbol) {
-
-			case '?':
-				type = 'qvar';
+			case "?":
+				type = "qvar";
 				local = true;
 				break;
-			case '<':
-				type = 'iri';
+			case "<":
+				type = "iri";
 				break;
-			case ':':
-				let expanded = doc.getText(
-					{
-						start: { line: params.position.line, character: 0 },
-						end: params.position
-					}
-				);
+			case ":":
+				let expanded = doc.getText({
+					start: { line: params.position.line, character: 0 },
+					end: params.position,
+				});
 				expanded = expanded.substring(expanded.lastIndexOf(" ") + 1);
 				// connection.console.log("expanded? " + expanded);
-				if (expanded == '_:') {
-					type = 'bnode';
+				if (expanded == "_:") {
+					type = "bnode";
 					local = true;
 				} else {
-					type = 'pname';
+					type = "pname";
 					// get all localnames under the "needle" prefix
 					// (vscode will take care of auto-completion for any returned strings)
 					needle = expanded.substring(0, expanded.length - 1);
+
+					// const prefix = expanded.substring(0, expanded.length - 1);
 				}
 				break;
 			default:
@@ -458,14 +633,12 @@ connection.onCompletion(
 		}
 
 		let results: string[];
-		if (local)
-			results = acTokens.get(uri, type, needle);
-		else
-			results = acTokens.getAll(type, needle);
+		if (local) results = acTokens.get(uri, type, needle);
+		else results = acTokens.getAll(type, needle);
 
-		// connection.console.log("results? " + results);
+		// connection.console.log("ac? " + needle + " - " + results);
 
-		return results.map(str => CompletionItem.create(str));
+		return results.map((str) => CompletionItem.create(str));
 	}
 );
 
