@@ -131,7 +131,7 @@ export function activate(context: ExtensionContext) {
 				editor.edit((editBuilder) => {
 					editBuilder.insert(txtEdit.range.start, txtEdit.newText);
 				});
-				window.showInformationMessage(`Inserted namespace: "${edit.ns.prefix}"`);
+				window.showInformationMessage(`Inserted namespace: "${edit.ns.prefix}" (you can turn this off under settings)`);
 			});
 		});
 	});

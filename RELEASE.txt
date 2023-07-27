@@ -1,6 +1,7 @@
-v1.4
+v1.4.0
 fix issue with n3 grammar (re-introduced upon retaining comments)
 fix error with auto-insert of prefixes
 enable/disable auto-complete
 auto-complete with well-known vocabularies
 unknown-namespace mode that works as you type
+auto re-load server config when changed
