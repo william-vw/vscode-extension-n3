@@ -51,61 +51,23 @@ let hasDiagnosticRelatedInformationCapability = false;
 const MSG_UNKNOWN_PREFIX = "Unknown prefix: ";
 
 let nsMode: NsModes; // configured prefix->ns map
-let knownNsMap: Map<string, string>;
+let knownNsMap = new Map<string, string>();
 // (ac)
-let vocabTermMap: Map<string, string[]>; // configured ns->terms map
-// prefixes added to acTokens based on vocabTermMap
+let acEnabled = false;
+let vocabTermMap = new Map<string, string[]>(); // configured ns->terms map
 // (not strictly needed, but makes things easier)
-let acPrefix: Set<string>;
-let acing = false; // whether an ac was just issued (hack)
-let acTokens: DocTokens; // current ac tokens
+const acPrefix = new Set<string>(); // prefixes added to acTokens based on vocabTermMap
+let curInAc = false; // whether an ac was just issued (hack)
+const acTokens = new DocTokens(); // current ac tokens
 
 // ... needed
 let curTextDocument: TextDocument;
 
 // - server initialization
 
-enum NsModes {
-	Automatic = "Automatic",
-	Suggest = "Suggest",
-}
-
-interface InitOptions {
-	ns: NsOptions;
-	ac: AcOptions;
-}
-
-interface NsOptions {
-	map: object;
-	mode: string;
-}
-
-interface AcOptions {
-	enabled: boolean;
-	vocabTermMap: Map<string, string[]>;
-}
-
 connection.onInitialize((params: InitializeParams) => {
-	const initOptions: InitOptions = params.initializationOptions;
-	// connection.console.log("init: " + JSON.stringify(initOptions, null, 4));
-
-	nsMode = <NsModes>initOptions.ns.mode;
-	connection.console.log("nsMode?" + nsMode);
-
-	knownNsMap = new Map(Object.entries(initOptions.ns.map));
-	acPrefix = new Set();
-
-	// (ac)
-	const acOptions: AcOptions = initOptions.ac;
-	if (acOptions.enabled) {
-		acTokens = new DocTokens();
-
-		if (acOptions.vocabTermMap) {
-			vocabTermMap = new Map(Object.entries(acOptions.vocabTermMap));
-			// (one way to print map contents..)
-			// connection.console.log("vocabTermMap:" + JSON.stringify(Object.fromEntries(vocabTermMap)));
-		}
-	}
+	const config: ServerConfig = params.initializationOptions;
+	setupServer(config);
 
 	const capabilities = params.capabilities;
 
@@ -148,13 +110,13 @@ connection.onInitialize((params: InitializeParams) => {
 });
 
 connection.onInitialized(() => {
-	if (hasConfigurationCapability) {
-		// Register for all configuration changes.
-		connection.client.register(
-			DidChangeConfigurationNotification.type,
-			undefined
-		);
-	}
+	// if (hasConfigurationCapability) {
+	// 	// Register for all configuration changes.
+	// 	connection.client.register(
+	// 		DidChangeConfigurationNotification.type,
+	// 		undefined
+	// 	);
+	// }
 	if (hasWorkspaceFolderCapability) {
 		connection.workspace.onDidChangeWorkspaceFolders((_event) => {
 			connection.console.log("Workspace folder change event received.");
@@ -162,7 +124,59 @@ connection.onInitialized(() => {
 	}
 });
 
+connection.onNotification("update/config", (config) => {
+	connection.console.log("Config change event received.");
+	setupServer(config);
+
+	documents.all().forEach(validateTextDocument);
+});
+
+
 // - server configuration
+
+interface ServerConfig {
+	ns: NsOptions;
+	ac: AcOptions;
+}
+
+interface NsOptions {
+	map: object;
+	mode: string;
+}
+
+enum NsModes {
+	Automatic = "Automatic",
+	Suggest = "Suggest",
+}
+
+interface AcOptions {
+	enabled: boolean;
+	vocabTermMap: Map<string, string[]>;
+}
+
+function setupServer(config: ServerConfig) {
+	connection.console.log("config: " + JSON.stringify(config, null, 4));
+
+	const ns = config.ns;
+	const ac = config.ac;
+
+	nsMode = <NsModes>ns.mode;
+	knownNsMap = new Map(Object.entries(ns.map));
+	vocabTermMap.clear();
+	acPrefix.clear();
+	curInAc = false;
+	acTokens.clear();
+
+	// (ac)
+	acEnabled = ac.enabled;
+	if (ac.enabled) {
+		if (ac.vocabTermMap) {
+			vocabTermMap = new Map(Object.entries(ac.vocabTermMap));
+			// (one way to print map contents..)
+			// connection.console.log("vocabTermMap:" + JSON.stringify(Object.fromEntries(vocabTermMap)));
+		}
+	}
+}
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
@@ -172,17 +186,18 @@ let globalSettings: any;
 // Cache the settings of all open documents
 const documentSettings: Map<string, Thenable<any>> = new Map();
 
-connection.onDidChangeConfiguration((change) => {
-	if (hasConfigurationCapability) {
-		// Reset all cached document settings
-		documentSettings.clear();
-	} else {
-		globalSettings = <any>change.settings.n3LspServer;
-	}
-
-	// Revalidate all open text documents
-	documents.all().forEach(validateTextDocument);
-});
+// connection.onDidChangeConfiguration((change) => {
+// 	connection.console.log("onDidChangeConfiguration:" + JSON.stringify(change, null, 4));
+// 	if (hasConfigurationCapability) {
+// 		// Reset all cached document settings
+// 		documentSettings.clear();
+// 	} else {
+// 		globalSettings = <any>change.settings.n3LspServer;
+// 	}
+	
+// 	// Revalidate all open text documents
+// 	documents.all().forEach(validateTextDocument);
+// });
 
 function getDocumentSettings(resource: string): Thenable<any> {
 	if (!hasConfigurationCapability) {
@@ -198,6 +213,11 @@ function getDocumentSettings(resource: string): Thenable<any> {
 	}
 	return result;
 }
+
+// connection.onDidChangeWatchedFiles(_change => {
+// 	// Monitored files have change in VSCode
+// 	connection.console.log('We received an file change event');
+// });
 
 // Only keep settings for open documents
 documents.onDidClose((e) => {
@@ -232,8 +252,8 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// reset collected auto-complete tokens
 
 	// (ac)
-	acTokens?.reset(docUri);
-	acPrefix?.clear();
+	acTokens.reset(docUri);
+	acPrefix.clear();
 
 	// connection.console.log("n3?\n" + JSON.stringify(n3, null, 4));
 	n3.parse(text, {
@@ -323,7 +343,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 			// connection.console.log(type + ": " + JSON.stringify(term));
 
 			// (ac) collect auto-complete tokens
-			acTokens?.add(docUri, type, term);
+			acTokens.add(docUri, type, term);
 		},
 
 		onPrefix: function (prefix: string, uri: string) {
@@ -331,7 +351,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 			prefix = prefix.substring(0, prefix.length - 1); // remove ":"
 
 			// connection.console.log("onPrefix? " + prefix + ", " + uri);
-			if (vocabTermMap != null && !acPrefix?.has(prefix)) {
+			if (vocabTermMap.size > 0 && !acPrefix?.has(prefix)) {
 				uri = String(uri);
 				uri = uri.substring(1, uri.length - 1); // remove "<" and ">"
 
@@ -356,9 +376,9 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
 	// (ac) updating the editor contents will mess with ac (it somehow "cancels" the ac-list)
 	// if ac'ing, only issue ns updates once no syntax errors are found (i.e., stmt is done)
-	if (acing && diagnostics.length == 0 && edits.length > 0) { 
+	if (!curInAc || (diagnostics.length == 0 && edits.length > 0)) { 
 		connection.sendNotification("update/namespaces", edits); 
-		acing = false;
+		curInAc = false;
 	}
 }
 
@@ -512,18 +532,12 @@ async function formatCode(text: string, settings: any) {
 	});
 }
 
-// connection.onDidChangeWatchedFiles(_change => {
-// 	// Monitored files have change in VSCode
-// 	connection.console.log('We received an file change event');
-// });
-
 // (ac) auto-completion of terms
-
 connection.onCompletion(
 	(params: TextDocumentPositionParams): CompletionItem[] => {
-		if (!acTokens) return [];
+		if (!acEnabled) return [];
 
-		connection.console.log("oncompletion");
+		connection.console.log("onCompletion");
 
 		const docUri = params.textDocument.uri;
 		// connection.console.log("uri? " + uri);
@@ -577,13 +591,13 @@ connection.onCompletion(
 		if (prefix != '' && knownNsMap.has(prefix) && !acPrefix.has(prefix)) {
 			const uri = knownNsMap.get(prefix)!;
 
-			if (vocabTermMap?.has(uri)) {
+			if (vocabTermMap.has(uri)) {
 				const terms: string[] = vocabTermMap.get(uri)!;
 				terms.forEach((t) =>
 					acTokens.add(docUri, "pname", [prefix, t])
 				);
 
-				acing = true;
+				curInAc = true;
 				acPrefix.add(prefix); // record that prefix was added to ac-tokens
 			}
 		}

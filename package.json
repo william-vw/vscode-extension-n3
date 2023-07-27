@@ -92,7 +92,7 @@
 			"title": "Notation3",
 			"properties": {
 				"n3Execute.reasoner": {
-					"order": 0,
+					"order": 1,
 					"type": "string",
 					"enum": [
 						"eye",
@@ -102,7 +102,7 @@
 					"description": "Choose the N3 reasoner to execute N3 code"
 				},
 				"n3Execute.jen3Path": {
-					"order": 1,
+					"order": 2,
 					"type": "string",
 					"default": "",
 					"description": "Path to the jen3 JAR file (download at https://github.com/william-vw/jen3/releases)"
@@ -113,30 +113,30 @@
 					"default": true,
 					"description": "Only show inferences and not the full deductive closure"
 				},
-				"n3LspServer.formatNamespaces": {
-					"order": 5,
-					"type": "boolean",
-					"default": true,
-					"description": "When formatting, also format prefix and base declarations by grouping them all at the top, using the '@' syntax, and sorting them alphabetically."
-				},
 				"n3Execute.extraEyeArguments": {
-					"order": 6,
+					"order": 4,
 					"type": "string",
 					"default": "",
 					"description": "Provide additional command line arguments to eye."
 				},
 				"n3Execute.postProcessEyeTraces": {
-					"order": 7,
+					"order": 5,
 					"type": "boolean",
 					"default": true,
 					"description": "Post-process eye debug tracing (group by subject and filter duplicates)."
 				},
+				"n3LspServer.formatNamespaces": {
+					"order": 6,
+					"type": "boolean",
+					"default": true,
+					"description": "When formatting, also format prefix and base declarations by grouping them all at the top, using the '@' syntax, and sorting them alphabetically."
+				},
 				"n3LspServer.namespacesFile": {
-					"order": 8,
+					"order": 7,
 					"scope": "resource",
 					"type": "string",
 					"default": "",
-					"description": "Path to a JSON file with a single object that maps prefixes to their namepace URIs. This is used to suggest or directly insert namespaces when their prefix is found.\n*** Restart editor to load new namespaces ***\n*** See https://github.com/william-vw/vscode-extension-n3/blob/main/data/namespaces.json for an example ***"
+					"description": "Path to a JSON file with a single object that maps prefixes to their namepace URIs. This is used to suggest or directly insert namespaces when their prefix is found.\n*** See https://github.com/william-vw/vscode-extension-n3/blob/main/data/namespaces.json for an example ***"
 				},
 				"n3LspServer.insertNamespaces": {
 					"order": 8,
@@ -147,7 +147,7 @@
 						"Suggest"
 					],
 					"default": "Automatic",
-					"description": "When found, insert a known namespace directly (Automatic) or suggest a code action (Suggest).\n*** Restart editor to have this setting take effect ***"
+					"description": "When found, insert a known namespace directly (Automatic) or suggest a code action (Suggest)."
 				},
 				"n3LspServer.autocomplete": {
 					"order": 9,
@@ -168,26 +168,7 @@
 					"scope": "resource",
 					"type": "string",
 					"default": "",
-					"description": "Path to a JSON file with a single object that maps namespace URIs to text files with their terms. If the relevant auto-complete option is enabled, these terms will also be used in auto-completion.\n*** Restart editor to load new vocabulary terms ***\n*** See https://github.com/william-vw/vscode-extension-n3/blob/main/data/vocab/ for an example vocabularies.json file and files with predefined vocabulary terms. ***"
-				},
-				"n3LspServer.maxNumberOfProblems": {
-					"order": 12,
-					"scope": "resource",
-					"type": "number",
-					"default": 100,
-					"description": "Controls the maximum number of problems produced by the server."
-				},
-				"n3LspServer.trace.server": {
-					"order": 13,
-					"scope": "window",
-					"type": "string",
-					"enum": [
-						"off",
-						"messages",
-						"verbose"
-					],
-					"default": "verbose",
-					"description": "Traces the communication between VS Code and the language server."
+					"description": "Path to a JSON file with a single object that maps namespace URIs to text files with their terms. If the relevant auto-complete option is enabled, these terms will also be used in auto-completion.\n*** See https://github.com/william-vw/vscode-extension-n3/blob/main/data/vocab/ for an example vocabularies.json file and files with predefined vocabulary terms. ***"
 				}
 			}
 		}

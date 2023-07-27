@@ -3,7 +3,7 @@ import { TokenSet } from './TokenSet.js';
 export class DocTokens {
 
     constructor() {
-        this.docTokens = {};
+        this.clear();
     }
 
     reset(uri) {
@@ -24,5 +24,9 @@ export class DocTokens {
             set.get(type, needle).forEach(el => ret.add(el)));
             
         return Array.from(ret).sort();
+    }
+
+    clear() {
+        this.docTokens = {};
     }
 }

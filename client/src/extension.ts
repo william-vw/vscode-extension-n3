@@ -57,76 +57,18 @@ export function activate(context: ExtensionContext) {
 		},
 	};
 
-	const initOptions = {
-		ns: { map: undefined, mode: undefined },
-		ac: { enabled: undefined, vocabTermMap: undefined },
-	};
-
-	const config = workspace.getConfiguration("n3LspServer");
-
-	// namespaces file
-
-	const configNsPath = config.get<string>("namespacesFile");
-	const nsMapPath = configNsPath
-		? configNsPath
-		: context.asAbsolutePath("data/namespaces.json");
-	const nsMode = config.get<string>("insertNamespaces");
-	try {
-		initOptions.ns.map = require(nsMapPath);
-		initOptions.ns.mode = nsMode;
-	} catch (e) {
-		window.showErrorMessage(
-			`error loading namespaces file ${configNsPath}: ${e}`
-		);
-	}
-
-	// auto-complete
-
-	const configAc = config.get<boolean>("autocomplete");
-	initOptions.ac.enabled = configAc;
-
-	if (configAc) {
-		const configAcWithVocabs = config.get<boolean>(
-			"autocompleteWithWellKnownVocabularies"
-		);
-
-		if (configAcWithVocabs) {
-			const configVocabPath = config.get<string>("vocabulariesFile");
-			const rootPath = configVocabPath ? undefined : "data/vocab/";
-			const vocabTermMapPath = configVocabPath
-				? configVocabPath
-				: context.asAbsolutePath(`${rootPath}vocabularies.json`);
-
-			try {
-				const vocabTermMap = require(vocabTermMapPath);
-				for (const key in vocabTermMap) {
-					const value: string = vocabTermMap[key];
-					const path: string = configVocabPath
-						? value
-						: context.asAbsolutePath(`${rootPath}${value}`);
-
-					vocabTermMap[key] = require(path);
-				}
-				initOptions.ac.vocabTermMap = vocabTermMap;
-			} catch (e) {
-				window.showErrorMessage(
-					`Error loading vocabulary terms file ${path}:\n${e}`
-				);
-			}
-		}
-	}
-
-	console.log("config", initOptions.ac);
+	const serverConfig: object = getServerConfig(context);
 
 	// Options to control the language client
 	const clientOptions: LanguageClientOptions = {
 		// Register the server for plain text documents
 		documentSelector: [{ scheme: "file", language: "n3" }],
 		synchronize: {
+			// configurationSection: 'n3LspServer', // need to pre-process our config first (getServerConfig)
 			// Notify the server about file changes to '.clientrc files contained in the workspace
 			fileEvents: workspace.createFileSystemWatcher("**/.clientrc"),
 		},
-		initializationOptions: initOptions,
+		initializationOptions: serverConfig,
 	};
 
 	// Create the language client and start the client.
@@ -167,6 +109,15 @@ export function activate(context: ExtensionContext) {
 				)
 		)
 	);
+	
+	workspace.onDidChangeConfiguration((event) => {
+		if (event.affectsConfiguration("n3LspServer")) {
+			const serverConfig = getServerConfig(context);
+
+			// n3OutputChannel.append(`onDidChangeConfiguration: ${JSON.stringify(serverConfig, null, 4)}`);
+			client.sendNotification("update/config", serverConfig);
+		}
+	});
 
 	// execute updates requested from server
 	// (in our case, requests to insert namespaces)
@@ -184,6 +135,71 @@ export function activate(context: ExtensionContext) {
 			});
 		});
 	});
+}
+
+function getServerConfig(context: ExtensionContext): object {
+	const config = workspace.getConfiguration("n3LspServer");
+
+	const serverConfig = {
+		ns: { map: undefined, mode: undefined },
+		ac: { enabled: undefined, vocabTermMap: undefined },
+	};
+
+	// namespaces file
+
+	const configNsPath = config.get<string>("namespacesFile");
+	const nsMapPath = configNsPath
+		? configNsPath
+		: context.asAbsolutePath("data/namespaces.json");
+	const nsMode = config.get<string>("insertNamespaces");
+	try {
+		serverConfig.ns.map = require(nsMapPath);
+		serverConfig.ns.mode = nsMode;
+	} catch (e) {
+		window.showErrorMessage(
+			`error loading namespaces file ${configNsPath}: ${e}`
+		);
+	}
+
+	// auto-complete
+
+	const configAc = config.get<boolean>("autocomplete");
+	serverConfig.ac.enabled = configAc;
+
+	if (configAc) {
+		const configAcWithVocabs = config.get<boolean>(
+			"autocompleteWithWellKnownVocabularies"
+		);
+
+		if (configAcWithVocabs) {
+			let vocabFileMapPath = config.get<string>("vocabulariesFile");
+			if (!vocabFileMapPath)
+				vocabFileMapPath = context.asAbsolutePath("data/vocab/vocabularies.json");
+
+			const rootPath = vocabFileMapPath.substring(0, vocabFileMapPath.lastIndexOf("/"));
+
+			let path: string;
+			try {
+				const vocabFileMap = require(vocabFileMapPath);
+				const vocabTermMap = {};
+				for (const key in vocabFileMap) {
+					const file: string = vocabFileMap[key];
+					path = `${rootPath}/${file}`;
+					vocabTermMap[key] = require(path);
+				}
+
+				serverConfig.ac.vocabTermMap = vocabTermMap;
+
+			} catch (e) {
+				window.showErrorMessage(
+					`Error loading vocabulary terms file ${path}:\n${e}`
+				);
+			}
+		}
+	}
+
+	// n3OutputChannel.append("config: " + JSON.stringify(serverConfig));
+	return serverConfig;
 }
 
 interface InsertNamespace {
