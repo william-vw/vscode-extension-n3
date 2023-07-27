@@ -50,12 +50,15 @@ let hasDiagnosticRelatedInformationCapability = false;
 
 const MSG_UNKNOWN_PREFIX = "Unknown prefix: ";
 
-let nsMode: NsModes;
-let knownNsMap: Map<string, string>; // keeps configured prefix->ns map
-let prefixMap: Map<string, string>; // keeps current prefix->ns
+let nsMode: NsModes; // configured prefix->ns map
+let knownNsMap: Map<string, string>;
 // (ac)
-let vocabMap: Map<string, string[]>; // keeps configured ns->terms map
-let acTokens: DocTokens; // keeps current ac tokens
+let vocabTermMap: Map<string, string[]>; // configured ns->terms map
+// prefixes added to acTokens based on vocabTermMap
+// (not strictly needed, but makes things easier)
+let acPrefix: Set<string>;
+let acing = false; // whether an ac was just issued (hack)
+let acTokens: DocTokens; // current ac tokens
 
 // ... needed
 let curTextDocument: TextDocument;
@@ -79,7 +82,7 @@ interface NsOptions {
 
 interface AcOptions {
 	enabled: boolean;
-	vocabMap: Map<string, string[]>;
+	vocabTermMap: Map<string, string[]>;
 }
 
 connection.onInitialize((params: InitializeParams) => {
@@ -90,17 +93,17 @@ connection.onInitialize((params: InitializeParams) => {
 	connection.console.log("nsMode?" + nsMode);
 
 	knownNsMap = new Map(Object.entries(initOptions.ns.map));
-	prefixMap = new Map();
+	acPrefix = new Set();
 
 	// (ac)
 	const acOptions: AcOptions = initOptions.ac;
 	if (acOptions.enabled) {
 		acTokens = new DocTokens();
 
-		if (acOptions.vocabMap) {
-			vocabMap = new Map(Object.entries(acOptions.vocabMap));
+		if (acOptions.vocabTermMap) {
+			vocabTermMap = new Map(Object.entries(acOptions.vocabTermMap));
 			// (one way to print map contents..)
-			// connection.console.log("vocabMap:" + JSON.stringify(Object.fromEntries(vocabMap)));
+			// connection.console.log("vocabTermMap:" + JSON.stringify(Object.fromEntries(vocabTermMap)));
 		}
 	}
 
@@ -224,13 +227,13 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// let problems = 0;
 
 	const diagnostics: Diagnostic[] = [];
-	const edits: TextEdit[] = [];
+	const edits: InsertNamespace[] = [];
 
 	// reset collected auto-complete tokens
 
 	// (ac)
 	acTokens?.reset(docUri);
-	prefixMap?.clear();
+	acPrefix?.clear();
 
 	// connection.console.log("n3?\n" + JSON.stringify(n3, null, 4));
 	n3.parse(text, {
@@ -242,77 +245,13 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 			msg: string,
 			err: any
 		) {
-			// connection.console.log(
-			// 	"syntaxError: " +
-			// 	offendingSymbol +
-			// 	" - " +
-			// 	line +
-			// 	" - " +
-			// 	column +
-			// 	" - " +
-			// 	msg +
-			// 	" - " +
-			// 	err
-			// );
+			connection.console.log(
+				`syntaxError: ${offendingSymbol}-${line}-${column}-${msg}-${err}`
+			);
 
 			// see Token class in n3Main.js
-			let start, end;
-			if (offendingSymbol != null) {
-				start = textDocument.positionAt(offendingSymbol.start);
-				end = textDocument.positionAt(offendingSymbol.stop);
-
-				// (ac)
-				// problem: the compiler only recognizes prefixes (see unknownPrefix)
-				//  once it's too late, i.e., we already started typing the local name
-				// we want ac items of well-known prefixes to show up immediately 
-				
-				// thankfully, validateTextDocument is called before onCompletion
-				// so, below code will find a possible prefix when EOF is encountered
-				// (error that shows up when typing e.g., "rdf:")
-				// and populate acTokens with the well-known prefixes' terms
-
-				if (offendingSymbol.type == -1) { // (-1: EOF)
-					const line = textDocument.getText({
-						start: { line: start.line, character: 0 },
-						end: { line: start.line, character: start.character },
-					});
-					// at s/p/o position
-					const spIdx = line.lastIndexOf(" ");
-					let possiblePrefix = (
-						spIdx != -1 ? line.substring(spIdx) : line
-					).trim();
-
-					if (possiblePrefix != "") {
-						possiblePrefix = possiblePrefix.substring(
-							0,
-							possiblePrefix.length - 1
-						);
-
-						// connection.console.log("possiblePrefix: '" + possiblePrefix + "'");
-						// will keep getting EOF error so let's not go into infinite loop
-						if (!prefixMap.has(possiblePrefix)) {
-							if (knownNsMap.has(possiblePrefix)) {
-								const uri = knownNsMap.get(possiblePrefix)!;
-
-								prefixMap.set(possiblePrefix, uri);
-								// this results in ac options not being shown :-(
-								// so, ac will happen first, and only then is ns inserted
-								// edits.push(
-								// 	getInsertNamespace(curTextDocument, possiblePrefix, uri)
-								// );
-
-								if (vocabMap?.has(uri)) {
-									const terms: string[] = vocabMap.get(uri)!;
-									terms.forEach((t) => acTokens.add(docUri, "pname", [possiblePrefix, t]));
-								}
-							}
-						}
-					}
-				}
-			} else {
-				start = { line: line, character: column };
-				end = start;
-			}
+			const start = { line: line, character: column };
+			const end = start;
 
 			const diagnostic: Diagnostic = {
 				severity: DiagnosticSeverity.Error,
@@ -335,25 +274,16 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 			end: number
 		) {
 			connection.console.log(
-				"unknownPrefix: " +
-				prefix +
-				" - " +
-				pName +
-				" - " +
-				line +
-				" - " +
-				start +
-				" - " +
-				end
+				`unknownPrefix:${prefix}-${pName}-${line}-${start}-${end}`
 			);
 
-			// if we know this prefix, let's insert it directly!
+			// if nsMode 'automatic' & we know this prefix, let's insert it directly!
 			if (nsMode == NsModes.Automatic && knownNsMap.has(prefix)) {
 				const uri = knownNsMap.get(prefix)!;
-
 				edits.push(getInsertNamespace(curTextDocument, prefix, uri));
 
 				// else, let's show an error :-(
+				// (coupled with onCodeAction, this can be used for nsMode 'suggest')
 			} else {
 				line = line - 1; // ??
 				const startPos = { line: line, character: start };
@@ -382,16 +312,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 			msg: string
 		) {
 			connection.console.log(
-				"consoleError" +
-				type +
-				" - " +
-				line +
-				" - " +
-				start +
-				" - " +
-				end +
-				" - " +
-				msg
+				`consoleError: ${type}-${line}-${start}-${end}-${msg}`
 			);
 		},
 
@@ -409,21 +330,20 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 			prefix = String(prefix);
 			prefix = prefix.substring(0, prefix.length - 1); // remove ":"
 
-			uri = String(uri);
-			uri = uri.substring(1, uri.length - 1); // remove "<" and ">"
-
-			prefixMap?.set(prefix, uri);
-
-			// (ac) if prefix was defined for a known vocabulary,
-			// then add vocabulary's terms to acTokens under this prefix
-
-			// in case the prefix is already there
-			// syntaxError takes care of cases where prefix is being typed
-
 			// connection.console.log("onPrefix? " + prefix + ", " + uri);
-			if (vocabMap?.has(uri)) {
-				const terms: string[] = vocabMap.get(uri)!;
-				terms.forEach((t) => acTokens.add(docUri, "pname", [prefix, t]));
+			if (vocabTermMap != null && !acPrefix?.has(prefix)) {
+				uri = String(uri);
+				uri = uri.substring(1, uri.length - 1); // remove "<" and ">"
+
+				// (ac) prefix is found for a known vocabulary:
+				// add vocabulary's terms to acTokens under this prefix
+				// (also see onCompletion)
+				if (vocabTermMap.has(uri)) {
+					const terms: string[] = vocabTermMap.get(uri)!;
+					terms.forEach((t) => acTokens.add(docUri, "pname", [prefix, t]));
+
+					acPrefix?.add(prefix); // record that prefix was added to ac-tokens
+				}
 			}
 		},
 
@@ -434,7 +354,12 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
 	// connection.console.log("diagnostics?\n" + JSON.stringify(diagnostics, null, 4));
 	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
-	if (edits.length > 0) connection.sendNotification("updateText", edits);
+	// (ac) updating the editor contents will mess with ac (it somehow "cancels" the ac-list)
+	// if ac'ing, only issue ns updates once no syntax errors are found (i.e., stmt is done)
+	if (acing && diagnostics.length == 0 && edits.length > 0) { 
+		connection.sendNotification("update/namespaces", edits); 
+		acing = false;
+	}
 }
 
 // - import namespaces
@@ -462,7 +387,7 @@ connection.onCodeAction((params) => {
 					diagnostics: [diagnostic],
 					edit: {
 						changes: {
-							[params.textDocument.uri]: [edit],
+							[params.textDocument.uri]: [edit.edit],
 						},
 					},
 				};
@@ -475,35 +400,49 @@ connection.onCodeAction((params) => {
 	return codeActions;
 });
 
+
+interface InsertNamespace {
+	ns: NsInfo;
+	edit: TextEdit;
+}
+
+interface NsInfo {
+	prefix: string,
+	uri: string
+}
+
 function getInsertNamespace(
 	textDocument: TextDocument,
 	prefix: string,
 	uri: string
-): TextEdit {
+): InsertNamespace {
 	// keep any commented lines at the top
 	// (could be annotations such as @alsoload)
 	// also, add extra newline if next is not prefix
 
-	const info = getNamespaceInfo(textDocument.getText());
+	const pos = getStmtPos(textDocument.getText());
 
 	let directive = `@prefix ${prefix}: <${uri}> .\n`;
-	if (!info.nextIsPrefix) directive += "\n";
+	if (!pos.nextIsPrefix) directive += "\n";
 
 	return {
-		range: {
-			start: { line: info.lineNr, character: 0 },
-			end: { line: info.lineNr, character: 0 },
+		ns: { prefix: prefix, uri: uri },
+		edit: {
+			range: {
+				start: { line: pos.lineNr, character: 0 },
+				end: { line: pos.lineNr, character: 0 },
+			},
+			newText: directive,
 		},
-		newText: directive,
 	};
 }
 
-interface NamespaceInfo {
+interface StmtPos {
 	lineNr: number;
 	nextIsPrefix: boolean;
 }
 
-function getNamespaceInfo(text: string): NamespaceInfo {
+function getStmtPos(text: string): StmtPos {
 	let lineCnt = -1,
 		startIdx: number,
 		endIdx = -1,
@@ -584,10 +523,12 @@ connection.onCompletion(
 	(params: TextDocumentPositionParams): CompletionItem[] => {
 		if (!acTokens) return [];
 
-		const uri = params.textDocument.uri;
+		connection.console.log("oncompletion");
+
+		const docUri = params.textDocument.uri;
 		// connection.console.log("uri? " + uri);
 
-		const doc = documents.get(uri)!;
+		const doc = documents.get(docUri)!;
 
 		const symbol = doc.getText({
 			start: params.position,
@@ -598,9 +539,9 @@ connection.onCompletion(
 		});
 		// connection.console.log("symbol? " + symbol);
 
-		let type,
+		let type: string,
 			local = false,
-			needle;
+			prefix = '';
 		switch (symbol) {
 			case "?":
 				type = "qvar";
@@ -623,20 +564,35 @@ connection.onCompletion(
 					type = "pname";
 					// get all localnames under the "needle" prefix
 					// (vscode will take care of auto-completion for any returned strings)
-					needle = expanded.substring(0, expanded.length - 1);
-
-					// const prefix = expanded.substring(0, expanded.length - 1);
+					prefix = expanded.substring(0, expanded.length - 1);
 				}
 				break;
 			default:
 				return [];
 		}
 
-		let results: string[];
-		if (local) results = acTokens.get(uri, type, needle);
-		else results = acTokens.getAll(type, needle);
+		// (ac) in case we're typing a new prefix with ac-tokens
+		// (new: i.e., not yet handled in onPrefix)
+		// let's add those tokens here directly
+		if (prefix != '' && knownNsMap.has(prefix) && !acPrefix.has(prefix)) {
+			const uri = knownNsMap.get(prefix)!;
 
-		// connection.console.log("ac? " + needle + " - " + results);
+			if (vocabTermMap?.has(uri)) {
+				const terms: string[] = vocabTermMap.get(uri)!;
+				terms.forEach((t) =>
+					acTokens.add(docUri, "pname", [prefix, t])
+				);
+
+				acing = true;
+				acPrefix.add(prefix); // record that prefix was added to ac-tokens
+			}
+		}
+
+		let results: string[];
+		if (local) results = acTokens.get(docUri, type, prefix);
+		else results = acTokens.getAll(type, prefix);
+
+		connection.console.log("ac? " + prefix + " - " + results);
 
 		return results.map((str) => CompletionItem.create(str));
 	}

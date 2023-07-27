@@ -59,7 +59,7 @@ export function activate(context: ExtensionContext) {
 
 	const initOptions = {
 		ns: { map: undefined, mode: undefined },
-		ac: { enabled: undefined, vocabMap: undefined },
+		ac: { enabled: undefined, vocabTermMap: undefined },
 	};
 
 	const config = workspace.getConfiguration("n3LspServer");
@@ -93,21 +93,21 @@ export function activate(context: ExtensionContext) {
 		if (configAcWithVocabs) {
 			const configVocabPath = config.get<string>("vocabulariesFile");
 			const rootPath = configVocabPath ? undefined : "data/vocab/";
-			const vocabMapPath = configVocabPath
+			const vocabTermMapPath = configVocabPath
 				? configVocabPath
 				: context.asAbsolutePath(`${rootPath}vocabularies.json`);
 
 			try {
-				const vocabMap = require(vocabMapPath);
-				for (const key in vocabMap) {
-					const value: string = vocabMap[key];
+				const vocabTermMap = require(vocabTermMapPath);
+				for (const key in vocabTermMap) {
+					const value: string = vocabTermMap[key];
 					const path: string = configVocabPath
 						? value
 						: context.asAbsolutePath(`${rootPath}${value}`);
 
-					vocabMap[key] = require(path);
+					vocabTermMap[key] = require(path);
 				}
-				initOptions.ac.vocabMap = vocabMap;
+				initOptions.ac.vocabTermMap = vocabTermMap;
 			} catch (e) {
 				window.showErrorMessage(
 					`Error loading vocabulary terms file ${path}:\n${e}`
@@ -171,17 +171,29 @@ export function activate(context: ExtensionContext) {
 	// execute updates requested from server
 	// (in our case, requests to insert namespaces)
 	client.onReady().then(() => {
-		client.onNotification("updateText", (edits: TextEdit[]) => {
+		client.onNotification("update/namespaces", (edits: InsertNamespace[]) => {
 			//   n3OutputChannel.append("received: " + JSON.stringify(edits, null, 4));
 
 			const editor = vscode.window.activeTextEditor;
 			edits.forEach((edit) => {
+				const txtEdit = edit.edit;
 				editor.edit((editBuilder) => {
-					editBuilder.insert(edit.range.start, edit.newText);
+					editBuilder.insert(txtEdit.range.start, txtEdit.newText);
 				});
+				window.showInformationMessage(`Inserted namespace: "${edit.ns.prefix}"`);
 			});
 		});
 	});
+}
+
+interface InsertNamespace {
+	ns: NsInfo;
+	edit: TextEdit;
+}
+
+interface NsInfo {
+	prefix: string,
+	uri: string
 }
 
 class TraceInsert {
